@@ -51,6 +51,6 @@ This pattern feels like a practical middle ground between static UI and fully op
 
 Controlled GenUI gives us the magic of adaptive interfaces while keeping the system predictable, safe, and shippable.
 
-Next step: connecting the same schema contract to a real LLM.
+Update: Phase 3 connects the same schema contract to a real LLM using Structured Outputs, while keeping the controlled renderer and fallback path intact.
 
 #GenerativeUI #AI #React #TypeScript #Frontend #OpenAI #WebDevelopment

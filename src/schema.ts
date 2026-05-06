@@ -1,4 +1,5 @@
 import type { ComponentType, GeneratedPage, ValidationResult } from "./types";
+import { generatedPageSchema } from "./structuredSchema";
 
 export const componentRegistry: Array<{
   type: ComponentType;
@@ -40,7 +41,24 @@ export const componentRegistry: Array<{
 export const allowedComponents = componentRegistry.map((component) => component.type);
 
 export function validateGeneratedPage(page: GeneratedPage): ValidationResult {
-  return validateUnknownPage(page);
+  const registryValidation = validateUnknownPage(page);
+  if (!registryValidation.ok) return registryValidation;
+
+  const zodValidation = generatedPageSchema.safeParse(page);
+  if (!zodValidation.success) {
+    return {
+      ok: false,
+      errors: zodValidation.error.issues.map((issue) => issue.message),
+      allowedComponents,
+      blockedComponents: [],
+      source: "zod"
+    };
+  }
+
+  return {
+    ...registryValidation,
+    source: "zod"
+  };
 }
 
 export function validateUnknownPage(page: unknown): ValidationResult {
@@ -52,7 +70,8 @@ export function validateUnknownPage(page: unknown): ValidationResult {
       ok: false,
       errors: ["Schema must be an object"],
       allowedComponents,
-      blockedComponents
+      blockedComponents,
+      source: "registry"
     };
   }
 
@@ -78,7 +97,8 @@ export function validateUnknownPage(page: unknown): ValidationResult {
     ok: errors.length === 0,
     errors,
     allowedComponents,
-    blockedComponents
+    blockedComponents,
+    source: "registry"
   };
 }
 

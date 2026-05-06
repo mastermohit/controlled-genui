@@ -169,6 +169,21 @@ h1 {
   font-weight: 900;
 }
 
+.primaryButton:disabled {
+  cursor: wait;
+  opacity: 0.78;
+}
+
+.spinIcon {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .secondaryButton {
   width: 100%;
   margin-top: 14px;
@@ -207,6 +222,31 @@ h1 {
   border-color: #e4d8c2;
   text-align: left;
   font-size: 0.86rem;
+}
+
+.modeSwitch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  padding: 4px;
+  border: 1px solid #d6e1de;
+  border-radius: 8px;
+  background: #f7fbfa;
+}
+
+.modeSwitch button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  color: #31504b;
+  background: transparent;
+  font-weight: 900;
+}
+
+.modeSwitch button.active {
+  color: #fff;
+  background: #26364a;
 }
 
 .explainBand {
@@ -326,6 +366,44 @@ h1 {
 .status.error {
   color: #7d1d1d;
   background: #ffe0dc;
+}
+
+.sourcePill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.sourcePill.llm {
+  color: #145044;
+  background: #daf2ec;
+}
+
+.sourcePill.mock {
+  color: #26364a;
+  background: #e9eef5;
+}
+
+.sourcePill.fallback {
+  color: #8a2b1f;
+  background: #fff0ec;
+}
+
+.modelNotes {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  color: #53615d;
+  line-height: 1.55;
+}
+
+.modelNotes p {
+  margin-bottom: 0;
 }
 
 pre {

@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Library,
   LockKeyhole,
+  Loader2,
   Play,
   RotateCcw,
   ShieldCheck,
@@ -19,10 +20,11 @@ import {
 } from "lucide-react";
 import { ControlledRenderer } from "./components/ControlledRenderer";
 import { generateControlledPage } from "./generator";
+import { generateWithLlm } from "./llmGenerator";
 import { componentRegistry, validateGeneratedPage, validateUnknownPage } from "./schema";
-import type { HistoryItem, Product, ValidationResult } from "./types";
+import type { GeneratedPage, GenerationMode, GenerationResult, HistoryItem, Product, ValidationResult } from "./types";
 
-type StudioTab = "ui" | "schema" | "registry" | "guardrails" | "history";
+type StudioTab = "ui" | "schema" | "model" | "registry" | "guardrails" | "history";
 
 const examples = [
   "Find me a laptop for coding, gaming, and college under INR 80,000",
@@ -46,47 +48,71 @@ const unsafeSchema = {
 
 function getInitialTab(): StudioTab {
   const tab = new URLSearchParams(window.location.search).get("tab");
-  if (tab === "schema" || tab === "registry" || tab === "guardrails" || tab === "history") return tab;
+  if (tab === "schema" || tab === "model" || tab === "registry" || tab === "guardrails" || tab === "history") return tab;
   return "ui";
 }
 
 export function App() {
   const focusStudio = new URLSearchParams(window.location.search).get("focus") === "studio";
   const [prompt, setPrompt] = useState(examples[0]);
-  const [submittedPrompt, setSubmittedPrompt] = useState(examples[0]);
+  const [page, setPage] = useState<GeneratedPage>(() => generateControlledPage(examples[0]));
   const [activeTab, setActiveTab] = useState<StudioTab>(getInitialTab);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("mock");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [lastGeneration, setLastGeneration] = useState<GenerationResult>({
+    page,
+    source: "mock",
+    rawModelOutput: page
+  });
   const [showRejectedSchema, setShowRejectedSchema] = useState(
     new URLSearchParams(window.location.search).get("rejected") === "1"
   );
 
-  const page = useMemo(() => generateControlledPage(submittedPrompt), [submittedPrompt]);
   const validation = useMemo(() => validateGeneratedPage(page), [page]);
   const rejectedValidation = useMemo(() => validateUnknownPage(unsafeSchema), []);
   const schemaForPanel = showRejectedSchema ? unsafeSchema : page;
   const validationForPanel = showRejectedSchema ? rejectedValidation : validation;
 
-  function generate() {
-    const nextPage = generateControlledPage(prompt);
+  async function generate() {
+    setIsGenerating(true);
+    const result =
+      generationMode === "llm"
+        ? await generateWithLlm(prompt)
+        : {
+            page: generateControlledPage(prompt),
+            source: "mock" as const,
+            rawModelOutput: generateControlledPage(prompt)
+          };
+    const nextPage = result.page;
     const nextValidation = validateGeneratedPage(nextPage);
-    setSubmittedPrompt(prompt);
+    setPage(nextPage);
+    setLastGeneration(result);
     setActiveTab("ui");
+    setShowRejectedSchema(false);
     setHistory((items) => [
       {
         id: `${Date.now()}`,
         prompt,
         page: nextPage,
         validation: nextValidation,
-        createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        source: result.source
       },
       ...items
     ]);
+    setIsGenerating(false);
   }
 
   function restoreHistory(item: HistoryItem) {
     setPrompt(item.prompt);
-    setSubmittedPrompt(item.prompt);
+    setPage(item.page);
+    setLastGeneration({
+      page: item.page,
+      source: item.source,
+      rawModelOutput: item.page
+    });
     setActiveTab("ui");
   }
 
@@ -101,8 +127,8 @@ export function App() {
               </p>
               <h1>AI Product Finder Studio</h1>
               <p>
-                Phase 2 turns the product finder into a demo studio: generated UI, schema,
-                registry, guardrails, history, and controlled product details.
+                Phase 3 connects the studio to real schema generation while preserving
+                validation, guardrails, history, and controlled product details.
               </p>
             </div>
             <div className="controlPanel">
@@ -116,9 +142,9 @@ export function App() {
                 aria-label="Product finder prompt"
               />
               <div className="promptActions">
-                <button type="button" className="primaryButton" onClick={generate}>
-                  <Play size={16} />
-                  Generate
+                <button type="button" className="primaryButton" onClick={generate} disabled={isGenerating}>
+                  {isGenerating ? <Loader2 size={16} className="spinIcon" /> : <Play size={16} />}
+                  {isGenerating ? "Generating" : "Generate"}
                 </button>
                 <button type="button" className="iconButton" aria-label="Reset prompt" onClick={() => setPrompt(examples[0])}>
                   <RotateCcw size={17} />
@@ -130,6 +156,14 @@ export function App() {
                     {example}
                   </button>
                 ))}
+              </div>
+              <div className="modeSwitch" aria-label="Generation mode">
+                <button type="button" className={generationMode === "mock" ? "active" : ""} onClick={() => setGenerationMode("mock")}>
+                  Mock
+                </button>
+                <button type="button" className={generationMode === "llm" ? "active" : ""} onClick={() => setGenerationMode("llm")}>
+                  LLM
+                </button>
               </div>
             </div>
           </section>
@@ -157,7 +191,7 @@ export function App() {
       <section className={focusStudio ? "studioShell focusMode" : "studioShell"}>
         <div className="studioHeader">
           <div>
-            <p className="eyebrow">Phase 2 demo surface</p>
+            <p className="eyebrow">Phase 3 LLM schema surface</p>
             <h2>Controlled GenUI Studio</h2>
           </div>
           <StatusPill validation={validation} />
@@ -166,6 +200,7 @@ export function App() {
         <nav className="tabs" aria-label="Studio views">
           <TabButton tab="ui" activeTab={activeTab} setActiveTab={setActiveTab} icon={<LayoutDashboard size={16} />} label="Generated UI" />
           <TabButton tab="schema" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Code2 size={16} />} label="Schema" />
+          <TabButton tab="model" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Cpu size={16} />} label="Model Output" />
           <TabButton tab="registry" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Library size={16} />} label="Registry" />
           <TabButton tab="guardrails" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ShieldCheck size={16} />} label="Guardrails" />
           <TabButton tab="history" activeTab={activeTab} setActiveTab={setActiveTab} icon={<History size={16} />} label="History" />
@@ -210,6 +245,7 @@ export function App() {
         )}
 
         {activeTab === "registry" && <RegistryView />}
+        {activeTab === "model" && <ModelOutputView result={lastGeneration} validation={validation} generationMode={generationMode} />}
         {activeTab === "guardrails" && <GuardrailsView />}
         {activeTab === "history" && <HistoryView history={history} restoreHistory={restoreHistory} />}
       </section>
@@ -278,6 +314,49 @@ function RegistryView() {
   );
 }
 
+function ModelOutputView({
+  result,
+  validation,
+  generationMode
+}: {
+  result: GenerationResult;
+  validation: ValidationResult;
+  generationMode: GenerationMode;
+}) {
+  return (
+    <section className="schemaGrid">
+      <aside className="sidePanel">
+        <PanelTitle icon={<Cpu size={18} />} title="Model Output" />
+        <div className={`sourcePill ${result.source}`}>
+          {result.source === "llm" && "Live LLM schema"}
+          {result.source === "mock" && "Mock generator"}
+          {result.source === "fallback" && "Fallback schema"}
+        </div>
+        <StatusPill validation={validation} />
+        <div className="modelNotes">
+          <p>
+            Active mode: <strong>{generationMode === "llm" ? "LLM" : "Mock"}</strong>
+          </p>
+          <p>
+            The API response is parsed with Zod before the controlled renderer receives it.
+          </p>
+          <p>
+            Local note: run <strong>vercel dev</strong> to test LLM mode with `.env.local`.
+            Plain Vite will fall back because it does not run `/api/generate-schema`.
+          </p>
+          {result.error && (
+            <div className="warningBox">
+              <AlertTriangle size={18} />
+              {result.error}
+            </div>
+          )}
+        </div>
+      </aside>
+      <pre>{JSON.stringify(result.rawModelOutput ?? result.page, null, 2)}</pre>
+    </section>
+  );
+}
+
 function GuardrailsView() {
   const rules = [
     "The generator may return JSON only.",
@@ -285,6 +364,7 @@ function GuardrailsView() {
     "Product cards receive productIds, not arbitrary product objects.",
     "Prices and ranking are computed locally.",
     "Unknown component types are rejected before render.",
+    "LLM responses are validated with Zod before rendering.",
     "Raw HTML, script tags, iframe embeds, and remote component URLs have no render path."
   ];
 
@@ -293,7 +373,7 @@ function GuardrailsView() {
       <div className="guardrailPanel">
         <PanelTitle icon={<ShieldCheck size={18} />} title="Allowed" />
         <ul className="contractList">
-          {rules.slice(0, 5).map((rule) => (
+          {rules.slice(0, 6).map((rule) => (
             <li key={rule}>
               <CheckCircle2 size={16} /> {rule}
             </li>
@@ -303,7 +383,7 @@ function GuardrailsView() {
       <div className="guardrailPanel danger">
         <PanelTitle icon={<AlertTriangle size={18} />} title="Blocked" />
         <ul className="contractList">
-          {rules.slice(5).map((rule) => (
+          {rules.slice(6).map((rule) => (
             <li key={rule}>
               <AlertTriangle size={16} /> {rule}
             </li>
@@ -340,7 +420,7 @@ function HistoryView({
           <div>
             <span>{item.createdAt}</span>
             <h3>{item.prompt}</h3>
-            <p>{item.page.components.length} controlled components generated</p>
+            <p>{item.page.components.length} controlled components generated via {item.source}</p>
           </div>
           <button type="button" onClick={() => restoreHistory(item)}>
             Replay

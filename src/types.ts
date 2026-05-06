@@ -79,6 +79,7 @@ export type ValidationResult = {
   errors: string[];
   allowedComponents: ComponentType[];
   blockedComponents: string[];
+  source: "registry" | "zod";
 };
 
 export type HistoryItem = {
@@ -87,4 +88,14 @@ export type HistoryItem = {
   page: GeneratedPage;
   validation: ValidationResult;
   createdAt: string;
+  source: "mock" | "llm" | "fallback";
+};
+
+export type GenerationMode = "mock" | "llm";
+
+export type GenerationResult = {
+  page: GeneratedPage;
+  source: "mock" | "llm" | "fallback";
+  rawModelOutput?: unknown;
+  error?: string;
 };

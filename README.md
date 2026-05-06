@@ -41,6 +41,15 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Product detail drawer driven by trusted product ids
 - GitHub and LinkedIn-ready documentation
 
+## Phase 3 Features
+
+- Optional real LLM schema generation through `/api/generate-schema`
+- OpenAI Responses API Structured Outputs
+- Zod runtime validation before rendering
+- Mock/LLM mode switch
+- Model Output tab showing raw model output, validation, and fallback status
+- Safe fallback to deterministic mock generation when no API key is configured
+
 ## Controlled GenUI Principles
 
 This project follows four rules:
@@ -72,6 +81,8 @@ If a schema tries to use something like `raw_html`, the validator rejects it and
 
 ## Run Locally
 
+For the frontend-only mock demo:
+
 ```powershell
 npm install
 npm run dev -- --port 5173
@@ -83,11 +94,51 @@ Open:
 http://127.0.0.1:5173
 ```
 
+This starts Vite only. In this mode, the `/api/generate-schema` serverless route is not available, so **LLM mode will fall back to the mock generator**.
+
 ## Build
 
 ```powershell
 npm run build
 ```
+
+## Enable LLM Mode
+
+Create a `.env.local` file:
+
+```txt
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+Then run the app with Vercel's local runtime instead of plain Vite:
+
+```powershell
+npm install -g vercel
+vercel dev
+```
+
+Open the URL printed by `vercel dev`, usually:
+
+```txt
+http://localhost:3000
+```
+
+Why this matters:
+
+- `npm run dev` runs only the Vite frontend.
+- `vercel dev` runs both the Vite frontend and the `/api/generate-schema` serverless function.
+- LLM mode needs the serverless function so it can safely call OpenAI without exposing your API key in the browser.
+
+On Vercel, add the same environment variables in Project Settings.
+
+The app still works without these variables. If the API key is missing or the model returns invalid data, the UI falls back to the deterministic mock generator.
+
+To confirm which path ran, open the **Model Output** tab:
+
+- `Live LLM schema` means OpenAI returned a schema and Zod accepted it.
+- `Fallback schema` means the API route failed, no API key was available, or validation failed.
+- `Mock generator` means the app was intentionally run in Mock mode.
 
 ## Project Structure
 
@@ -96,7 +147,11 @@ src/
   App.tsx                         Studio shell and demo flows
   generator.ts                    Prompt-to-schema mock generator
   schema.ts                       Registry and validation logic
+  structuredSchema.ts             Zod and JSON Schema contract
+  llmGenerator.ts                 Client-side LLM/fallback adapter
   types.ts                        Controlled schema types
+api/
+  generate-schema.ts              Vercel serverless OpenAI endpoint
   components/
     ControlledRenderer.tsx        Approved component renderer
   data/
