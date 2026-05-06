@@ -65,7 +65,25 @@ The renderer does not need to change.
 ```txt
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4o-mini
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=5
+MAX_PROMPT_LENGTH=500
 ```
+
+## Rate Limiting
+
+`/api/generate-schema` applies a server-side fixed-window rate limit before calling OpenAI.
+
+The default policy is:
+
+```txt
+5 requests per IP per 60 seconds
+500 characters per prompt
+```
+
+When the limit is exceeded, the endpoint returns `429` and does not call OpenAI.
+
+The current implementation stores counters in memory. This is suitable for a demo and protects against casual misuse, but serverless instances do not share memory globally. A production deployment should use a shared rate-limit backend such as Upstash Redis or Vercel KV.
 
 ## Local Development Modes
 

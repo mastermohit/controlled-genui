@@ -109,6 +109,9 @@ Create a `.env.local` file:
 ```txt
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4o-mini
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=5
+MAX_PROMPT_LENGTH=500
 ```
 
 Then run the app with Vercel's local runtime instead of plain Vite:
@@ -133,6 +136,31 @@ Why this matters:
 On Vercel, add the same environment variables in Project Settings.
 
 The app still works without these variables. If the API key is missing or the model returns invalid data, the UI falls back to the deterministic mock generator.
+
+## Rate Limiting
+
+The LLM endpoint has a server-side per-IP rate limit before it calls OpenAI.
+
+Default limits:
+
+```txt
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=5
+MAX_PROMPT_LENGTH=500
+```
+
+That means each IP can make 5 LLM generation requests per 60 seconds, and prompts longer than 500 characters are rejected.
+
+The endpoint returns these headers:
+
+```txt
+X-RateLimit-Limit
+X-RateLimit-Remaining
+X-RateLimit-Reset
+Retry-After
+```
+
+This implementation uses an in-memory store, which is enough for a portfolio/demo app. For production-grade abuse protection across multiple serverless regions, use a shared store such as Upstash Redis, Vercel KV, or another managed rate-limit service.
 
 To confirm which path ran, open the **Model Output** tab:
 
