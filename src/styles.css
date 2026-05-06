@@ -236,6 +236,11 @@ h1 {
   padding: 28px clamp(20px, 5vw, 72px) 56px;
 }
 
+.studioShell.focusMode {
+  min-height: 100vh;
+  padding-top: 44px;
+}
+
 .studioHeader {
   display: flex;
   justify-content: space-between;

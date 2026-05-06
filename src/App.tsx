@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
@@ -44,13 +44,22 @@ const unsafeSchema = {
   ]
 };
 
+function getInitialTab(): StudioTab {
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  if (tab === "schema" || tab === "registry" || tab === "guardrails" || tab === "history") return tab;
+  return "ui";
+}
+
 export function App() {
+  const focusStudio = new URLSearchParams(window.location.search).get("focus") === "studio";
   const [prompt, setPrompt] = useState(examples[0]);
   const [submittedPrompt, setSubmittedPrompt] = useState(examples[0]);
-  const [activeTab, setActiveTab] = useState<StudioTab>("ui");
+  const [activeTab, setActiveTab] = useState<StudioTab>(getInitialTab);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showRejectedSchema, setShowRejectedSchema] = useState(false);
+  const [showRejectedSchema, setShowRejectedSchema] = useState(
+    new URLSearchParams(window.location.search).get("rejected") === "1"
+  );
 
   const page = useMemo(() => generateControlledPage(submittedPrompt), [submittedPrompt]);
   const validation = useMemo(() => validateGeneratedPage(page), [page]);
@@ -83,65 +92,69 @@ export function App() {
 
   return (
     <main>
-      <section className="hero">
-        <div className="heroCopy">
-          <p className="eyebrow">
-            <LockKeyhole size={14} /> Controlled Generative UI
-          </p>
-          <h1>AI Product Finder Studio</h1>
-          <p>
-            Phase 2 turns the product finder into a demo studio: generated UI, schema,
-            registry, guardrails, history, and controlled product details.
-          </p>
-        </div>
-        <div className="controlPanel">
-          <div className="panelHeader">
-            <WandSparkles size={18} />
-            <span>Prompt to controlled UI</span>
-          </div>
-          <textarea
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            aria-label="Product finder prompt"
-          />
-          <div className="promptActions">
-            <button type="button" className="primaryButton" onClick={generate}>
-              <Play size={16} />
-              Generate
-            </button>
-            <button type="button" className="iconButton" aria-label="Reset prompt" onClick={() => setPrompt(examples[0])}>
-              <RotateCcw size={17} />
-            </button>
-          </div>
-          <div className="examples">
-            {examples.map((example) => (
-              <button key={example} type="button" onClick={() => setPrompt(example)}>
-                {example}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      {!focusStudio && (
+        <>
+          <section className="hero">
+            <div className="heroCopy">
+              <p className="eyebrow">
+                <LockKeyhole size={14} /> Controlled Generative UI
+              </p>
+              <h1>AI Product Finder Studio</h1>
+              <p>
+                Phase 2 turns the product finder into a demo studio: generated UI, schema,
+                registry, guardrails, history, and controlled product details.
+              </p>
+            </div>
+            <div className="controlPanel">
+              <div className="panelHeader">
+                <WandSparkles size={18} />
+                <span>Prompt to controlled UI</span>
+              </div>
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                aria-label="Product finder prompt"
+              />
+              <div className="promptActions">
+                <button type="button" className="primaryButton" onClick={generate}>
+                  <Play size={16} />
+                  Generate
+                </button>
+                <button type="button" className="iconButton" aria-label="Reset prompt" onClick={() => setPrompt(examples[0])}>
+                  <RotateCcw size={17} />
+                </button>
+              </div>
+              <div className="examples">
+                {examples.map((example) => (
+                  <button key={example} type="button" onClick={() => setPrompt(example)}>
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
 
-      <section className="explainBand">
-        <div>
-          <LayoutDashboard size={18} />
-          <strong>Renderer</strong>
-          <span>Only registered blocks can appear.</span>
-        </div>
-        <div>
-          <Code2 size={18} />
-          <strong>Schema</strong>
-          <span>Generation returns JSON, not HTML.</span>
-        </div>
-        <div>
-          <Cpu size={18} />
-          <strong>Logic</strong>
-          <span>Ranking and pricing stay deterministic.</span>
-        </div>
-      </section>
+          <section className="explainBand">
+            <div>
+              <LayoutDashboard size={18} />
+              <strong>Renderer</strong>
+              <span>Only registered blocks can appear.</span>
+            </div>
+            <div>
+              <Code2 size={18} />
+              <strong>Schema</strong>
+              <span>Generation returns JSON, not HTML.</span>
+            </div>
+            <div>
+              <Cpu size={18} />
+              <strong>Logic</strong>
+              <span>Ranking and pricing stay deterministic.</span>
+            </div>
+          </section>
+        </>
+      )}
 
-      <section className="studioShell">
+      <section className={focusStudio ? "studioShell focusMode" : "studioShell"}>
         <div className="studioHeader">
           <div>
             <p className="eyebrow">Phase 2 demo surface</p>

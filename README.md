@@ -4,6 +4,10 @@ A demo project that showcases the **Controlled** pillar of Generative UI.
 
 Instead of allowing an AI model to generate arbitrary HTML, this app treats the model as a planner. The generated output is a strict JSON schema, and the frontend can only render components from a fixed registry.
 
+![Controlled GenUI demo](public/demo/controlled-genui-demo.gif)
+
+Live demo: [controlled-genui.vercel.app](https://controlled-genui.vercel.app)
+
 ## Demo Story
 
 The user asks for a laptop recommendation in natural language:
@@ -117,4 +121,3 @@ src/
 - Save history to local storage.
 - Add follow-up question blocks for vague prompts.
 - Add unit tests for schema validation and ranking.
-
