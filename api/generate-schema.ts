@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { controlledPageJsonSchema, parseGeneratedPage } from "../src/structuredSchema";
 
 type RequestBody = {
