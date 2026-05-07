@@ -1,7 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { useRef } from "react";
-import html2canvas from "html2canvas";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -297,6 +295,11 @@ export function App() {
       return;
     }
 
+    setShareStatus("");
+    setSchemaStatus("");
+    setImageStatus("Preparing UI image...");
+
+    const { default: html2canvas } = await import("html2canvas");
     const canvas = await html2canvas(surface, {
       backgroundColor: "#f6f5f0",
       scale: 2,
@@ -307,8 +310,6 @@ export function App() {
     anchor.href = canvas.toDataURL("image/png");
     anchor.download = "controlled-genui-surface.png";
     anchor.click();
-    setShareStatus("");
-    setSchemaStatus("");
     setImageStatus("UI image exported");
   }
 
