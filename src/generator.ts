@@ -1,6 +1,16 @@
 import { products } from "./data/products";
 import type { GeneratedPage } from "./types";
 
+const comparisonColumns: Array<"name" | "price" | "processor" | "ram" | "gpu" | "battery" | "weight"> = [
+  "name",
+  "price",
+  "processor",
+  "ram",
+  "gpu",
+  "battery",
+  "weight"
+];
+
 const numberFormatter = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0
 });
@@ -9,7 +19,7 @@ function formatInr(amount: number) {
   return `INR ${numberFormatter.format(amount)}`;
 }
 
-function getBudget(prompt: string) {
+export function getBudget(prompt: string) {
   const directMatch = prompt.match(/(?:under|below|less than|budget|inr|rs\.?)\s*([0-9,.]+)\s*(lakh|k)?/i);
   if (!directMatch) return 80000;
 
@@ -82,25 +92,44 @@ export function generateControlledPage(prompt: string): GeneratedPage {
         type: "filter_chips",
         props: { chips }
       },
-      {
-        type: "recommendation_cards",
-        props: { productIds: ranked }
-      },
-      {
-        type: "comparison_table",
-        props: {
-          productIds: ranked,
-          columns: ["name", "price", "processor", "ram", "gpu", "battery", "weight"]
-        }
-      },
+      ...(ranked.length
+        ? [
+            {
+              type: "recommendation_cards" as const,
+              props: { productIds: ranked }
+            },
+            {
+              type: "comparison_table" as const,
+              props: {
+                productIds: ranked,
+                columns: comparisonColumns
+              }
+            }
+          ]
+        : [
+            {
+              type: "no_results" as const,
+              props: {
+                heading: "No trusted catalog match",
+                body: `The current trusted catalog does not include a laptop at or below ${formatInr(budget)}.`,
+                suggestions: ["Increase the budget", "Relax gaming requirements", "Add refurbished products", "Expand the catalog"]
+              }
+            }
+          ]),
       {
         type: "insight_panel",
         props: {
-          heading: wantsGaming ? "GPU is the deciding factor" : "Balance matters more than raw specs",
-          body: wantsGaming
+          heading: ranked.length
+            ? wantsGaming
+              ? "GPU is the deciding factor"
+              : "Balance matters more than raw specs"
+            : "Controlled catalog boundary",
+          body: !ranked.length
+            ? "Controlled GenUI does not invent unavailable products. It can only render products that exist in the trusted catalog."
+            : wantsGaming
             ? "For gaming plus coding, the controlled generator prioritizes RTX-class graphics, 16 GB RAM, and acceptable thermals before display extras."
             : "For coding and college use, the controlled generator favors CPU, RAM, battery life, weight, and support over gaming hardware.",
-          tone: wantsGaming ? "warning" : "good"
+          tone: !ranked.length ? "neutral" : wantsGaming ? "warning" : "good"
         }
       },
       {

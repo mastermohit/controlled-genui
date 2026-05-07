@@ -111,7 +111,8 @@ export default async function handler(request: any, response: any) {
               "Return JSON only, matching the provided schema.",
               "Do not invent product ids. Use only product ids from the trusted catalog.",
               "Do not produce HTML, CSS, JavaScript, markdown, URLs, or unregistered component types.",
-              "Recommended component order: intent_summary, filter_chips, recommendation_cards, comparison_table, insight_panel, next_steps."
+              "Recommended component order: intent_summary, filter_chips, recommendation_cards, comparison_table, insight_panel, next_steps.",
+              "If no trusted catalog product fits the user's budget or constraints, use no_results instead of recommendation_cards and comparison_table."
             ].join(" ")
           },
           {
@@ -125,6 +126,7 @@ export default async function handler(request: any, response: any) {
                 "recommendation_cards",
                 "comparison_table",
                 "insight_panel",
+                "no_results",
                 "next_steps"
               ]
             })

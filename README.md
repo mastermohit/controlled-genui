@@ -68,9 +68,24 @@ Approved components:
 - `recommendation_cards`
 - `comparison_table`
 - `insight_panel`
+- `no_results`
 - `next_steps`
 
 If a schema tries to use something like `raw_html`, the validator rejects it and the renderer has no path for it.
+
+## Product Catalog Behavior
+
+Products are intentionally static and trusted. The LLM can choose from product IDs in `src/data/products.ts`, but it cannot invent new laptops, prices, or specs.
+
+If a prompt asks for a laptop below the trusted catalog range, such as:
+
+```txt
+Find a laptop for coding under INR 20,000
+```
+
+the app shows a controlled `no_results` state instead of pretending that one of the existing laptops matches.
+
+This is part of the Controlled GenUI contract: adaptive UI, but grounded in known data.
 
 ## Tech Stack
 

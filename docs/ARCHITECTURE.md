@@ -22,6 +22,7 @@ Rendering is owned by the application:
 - product ids resolve against trusted local data
 - unknown component types fail validation
 - no `dangerouslySetInnerHTML` path exists
+- impossible catalog matches render `no_results` instead of invented products
 
 ## Phase 2 Studio Views
 

@@ -52,6 +52,15 @@ const insightPanelSchema = z.object({
   })
 });
 
+const noResultsSchema = z.object({
+  type: z.literal("no_results"),
+  props: z.object({
+    heading: z.string(),
+    body: z.string(),
+    suggestions: z.array(z.string()).min(1).max(5)
+  })
+});
+
 const nextStepsSchema = z.object({
   type: z.literal("next_steps"),
   props: z.object({
@@ -65,6 +74,7 @@ export const controlledComponentSchema = z.discriminatedUnion("type", [
   recommendationCardsSchema,
   comparisonTableSchema,
   insightPanelSchema,
+  noResultsSchema,
   nextStepsSchema
 ]);
 
@@ -185,6 +195,24 @@ export const controlledPageJsonSchema = {
                   heading: { type: "string" },
                   body: { type: "string" },
                   tone: { type: "string", enum: ["good", "warning", "neutral"] }
+                }
+              }
+            }
+          },
+          {
+            type: "object",
+            additionalProperties: false,
+            required: ["type", "props"],
+            properties: {
+              type: { type: "string", enum: ["no_results"] },
+              props: {
+                type: "object",
+                additionalProperties: false,
+                required: ["heading", "body", "suggestions"],
+                properties: {
+                  heading: { type: "string" },
+                  body: { type: "string" },
+                  suggestions: { type: "array", minItems: 1, maxItems: 5, items: { type: "string" } }
                 }
               }
             }

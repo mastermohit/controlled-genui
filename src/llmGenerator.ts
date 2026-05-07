@@ -1,4 +1,5 @@
 import { generateControlledPage } from "./generator";
+import { enforceCatalogConstraints } from "./catalogGuardrails";
 import { parseGeneratedPage } from "./structuredSchema";
 import type { GenerationResult } from "./types";
 
@@ -30,8 +31,10 @@ export async function generateWithLlm(prompt: string): Promise<GenerationResult>
       };
     }
 
+    const page = enforceCatalogConstraints(parseGeneratedPage(payload.page));
+
     return {
-      page: parseGeneratedPage(payload.page),
+      page,
       source: "llm",
       rawModelOutput: payload.rawModelOutput ?? payload.page
     };

@@ -21,6 +21,7 @@ export type ComponentType =
   | "recommendation_cards"
   | "comparison_table"
   | "insight_panel"
+  | "no_results"
   | "next_steps";
 
 export type ControlledComponent =
@@ -58,6 +59,14 @@ export type ControlledComponent =
         heading: string;
         body: string;
         tone: "good" | "warning" | "neutral";
+      };
+    }
+  | {
+      type: "no_results";
+      props: {
+        heading: string;
+        body: string;
+        suggestions: string[];
       };
     }
   | {

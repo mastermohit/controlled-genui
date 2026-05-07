@@ -32,6 +32,11 @@ export const componentRegistry: Array<{
     allowedProps: ["heading", "body", "tone"]
   },
   {
+    type: "no_results",
+    purpose: "Explains that no trusted catalog item matches the constraints.",
+    allowedProps: ["heading", "body", "suggestions"]
+  },
+  {
     type: "next_steps",
     purpose: "Offers approved follow-up actions.",
     allowedProps: ["actions"]

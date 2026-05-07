@@ -4,6 +4,7 @@ import {
   Boxes,
   Check,
   Gauge,
+  SearchX,
   ShieldCheck,
   Sparkles,
   Star
@@ -122,6 +123,21 @@ function ComponentSwitch({
           <div>
             <h3>{component.props.heading}</h3>
             <p>{component.props.body}</p>
+          </div>
+        </section>
+      );
+    case "no_results":
+      return (
+        <section className="noResults">
+          <SearchX size={28} />
+          <div>
+            <h3>{component.props.heading}</h3>
+            <p>{component.props.body}</p>
+            <div className="suggestionRow">
+              {component.props.suggestions.map((suggestion) => (
+                <span key={suggestion}>{suggestion}</span>
+              ))}
+            </div>
           </div>
         </section>
       );
