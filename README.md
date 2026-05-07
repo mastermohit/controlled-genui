@@ -62,6 +62,9 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Persistent generated history in `localStorage`
 - Shareable demo links with `prompt` and `mode` query params
 - Copy/export controls for generated schemas
+- Guided Demo Script tab for walkthroughs
+- Schema comparison notes in Model Output
+- Multiple rejected-schema examples
 
 ## Controlled GenUI Principles
 
@@ -113,6 +116,8 @@ Use **Copy Demo Link** to copy the current prompt and mode as a shareable URL.
 Use **Copy Schema** or **Export Schema** to share the generated JSON contract behind the UI.
 
 Generated history is saved to `localStorage`, so refreshing the demo does not wipe prior runs.
+
+Use **Demo Script** during a recording or live walkthrough. It steps through the generated UI, schema contract, rejected examples, schema comparison, and shareable demo link.
 
 ## Tech Stack
 
@@ -254,10 +259,11 @@ api/
 2. Enter a product prompt and click Generate.
 3. Show that the generated product cards, comparison table, and insight panel change.
 4. Open the Schema tab and explain that the UI came from JSON.
-5. Toggle "Simulate rejected schema" and show `raw_html` being blocked.
+5. Toggle rejected schema examples and show raw HTML, remote components, and fake product objects being blocked.
 6. Open the Registry tab and show the approved component list.
 7. Open Guardrails and explain what the generator can and cannot do.
-8. Open a product detail drawer and explain that details come from trusted product ids.
+8. Open Model Output and show how the schema compares with the deterministic baseline.
+9. Open a product detail drawer and explain that details come from trusted product ids.
 
 ## Future Phase Ideas
 

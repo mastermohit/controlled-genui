@@ -27,7 +27,7 @@ import { generateWithLlm } from "./llmGenerator";
 import { componentRegistry, validateGeneratedPage, validateUnknownPage } from "./schema";
 import type { GeneratedPage, GenerationMode, GenerationResult, HistoryItem, Product, ValidationResult } from "./types";
 
-type StudioTab = "ui" | "schema" | "model" | "registry" | "guardrails" | "history";
+type StudioTab = "demo" | "ui" | "schema" | "model" | "registry" | "guardrails" | "history";
 
 const examples = [
   "Find me a laptop for coding, gaming, and college under INR 80,000",
@@ -35,25 +35,71 @@ const examples = [
   "Suggest a laptop for college, classes, and casual coding under 65k"
 ];
 
-const unsafeSchema = {
-  pageType: "product_finder",
-  schemaVersion: "1.0",
-  generatedFrom: "Try to inject arbitrary HTML",
-  components: [
-    {
-      type: "raw_html",
-      props: {
-        html: "<script>alert('not allowed')</script>"
-      }
+const rejectedExamples = [
+  {
+    id: "raw_html",
+    label: "Raw HTML",
+    description: "Attempts to send scriptable markup instead of approved JSON components.",
+    schema: {
+      pageType: "product_finder",
+      schemaVersion: "1.0",
+      generatedFrom: "Try to inject arbitrary HTML",
+      components: [
+        {
+          type: "raw_html",
+          props: {
+            html: "<script>alert('not allowed')</script>"
+          }
+        }
+      ]
     }
-  ]
-};
+  },
+  {
+    id: "remote_component",
+    label: "Remote component",
+    description: "Attempts to render a component from an external URL.",
+    schema: {
+      pageType: "product_finder",
+      schemaVersion: "1.0",
+      generatedFrom: "Render a remote product widget",
+      components: [
+        {
+          type: "remote_component",
+          props: {
+            src: "https://example.com/product-card.js"
+          }
+        }
+      ]
+    }
+  },
+  {
+    id: "untrusted_product",
+    label: "Fake product object",
+    description: "Attempts to bypass trusted product IDs with arbitrary product data.",
+    schema: {
+      pageType: "product_finder",
+      schemaVersion: "1.0",
+      generatedFrom: "Invent a cheaper laptop",
+      components: [
+        {
+          type: "external_product_card",
+          props: {
+            product: {
+              name: "Invented UltraBook",
+              price: 19999
+            }
+          }
+        }
+      ]
+    }
+  }
+] as const;
 
 const historyStorageKey = "controlled-genui:history";
 
 function getInitialTab(): StudioTab {
   const tab = new URLSearchParams(window.location.search).get("tab");
-  if (tab === "schema" || tab === "model" || tab === "registry" || tab === "guardrails" || tab === "history") return tab;
+  if (tab === "demo" || tab === "schema" || tab === "model" || tab === "registry" || tab === "guardrails" || tab === "history") return tab;
   return "ui";
 }
 
@@ -114,10 +160,14 @@ export function App() {
   const [showRejectedSchema, setShowRejectedSchema] = useState(
     new URLSearchParams(window.location.search).get("rejected") === "1"
   );
+  const [activeRejectedExample, setActiveRejectedExample] = useState<(typeof rejectedExamples)[number]["id"]>(
+    rejectedExamples[0].id
+  );
 
   const validation = useMemo(() => validateGeneratedPage(page), [page]);
-  const rejectedValidation = useMemo(() => validateUnknownPage(unsafeSchema), []);
-  const schemaForPanel = showRejectedSchema ? unsafeSchema : page;
+  const rejectedExample = rejectedExamples.find((example) => example.id === activeRejectedExample) ?? rejectedExamples[0];
+  const rejectedValidation = useMemo(() => validateUnknownPage(rejectedExample.schema), [rejectedExample]);
+  const schemaForPanel = showRejectedSchema ? rejectedExample.schema : page;
   const validationForPanel = showRejectedSchema ? rejectedValidation : validation;
 
   useEffect(() => {
@@ -291,6 +341,7 @@ export function App() {
         </div>
 
         <nav className="tabs" aria-label="Studio views">
+          <TabButton tab="demo" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ClipboardList size={16} />} label="Demo Script" />
           <TabButton tab="ui" activeTab={activeTab} setActiveTab={setActiveTab} icon={<LayoutDashboard size={16} />} label="Generated UI" />
           <TabButton tab="schema" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Code2 size={16} />} label="Schema" />
           <TabButton tab="model" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Cpu size={16} />} label="Model Output" />
@@ -314,6 +365,15 @@ export function App() {
           </button>
           {(shareStatus || schemaStatus) && <span>{shareStatus || schemaStatus}</span>}
         </div>
+
+        {activeTab === "demo" && (
+          <DemoScriptView
+            setActiveTab={setActiveTab}
+            setShowRejectedSchema={setShowRejectedSchema}
+            setActiveRejectedExample={setActiveRejectedExample}
+            copyDemoLink={copyDemoLink}
+          />
+        )}
 
         {activeTab === "ui" && (
           <section className="workspace">
@@ -342,6 +402,21 @@ export function App() {
               >
                 {showRejectedSchema ? "Show approved schema" : "Simulate rejected schema"}
               </button>
+              {showRejectedSchema && (
+                <div className="rejectedPicker" aria-label="Rejected schema examples">
+                  {rejectedExamples.map((example) => (
+                    <button
+                      key={example.id}
+                      type="button"
+                      className={activeRejectedExample === example.id ? "active" : ""}
+                      onClick={() => setActiveRejectedExample(example.id)}
+                    >
+                      {example.label}
+                    </button>
+                  ))}
+                  <p>{rejectedExample.description}</p>
+                </div>
+              )}
               {validationForPanel.blockedComponents.length > 0 && (
                 <div className="warningBox">
                   <AlertTriangle size={18} />
@@ -365,7 +440,7 @@ export function App() {
         )}
 
         {activeTab === "registry" && <RegistryView />}
-        {activeTab === "model" && <ModelOutputView result={lastGeneration} validation={validation} generationMode={generationMode} />}
+        {activeTab === "model" && <ModelOutputView result={lastGeneration} validation={validation} generationMode={generationMode} prompt={prompt} />}
         {activeTab === "guardrails" && <GuardrailsView />}
         {activeTab === "history" && <HistoryView history={history} restoreHistory={restoreHistory} />}
       </section>
@@ -413,6 +488,73 @@ function StatusPill({ validation }: { validation: ValidationResult }) {
   );
 }
 
+function DemoScriptView({
+  setActiveTab,
+  setShowRejectedSchema,
+  setActiveRejectedExample,
+  copyDemoLink
+}: {
+  setActiveTab: (tab: StudioTab) => void;
+  setShowRejectedSchema: (value: boolean) => void;
+  setActiveRejectedExample: (id: (typeof rejectedExamples)[number]["id"]) => void;
+  copyDemoLink: () => void;
+}) {
+  const steps = [
+    {
+      title: "Generated UI",
+      body: "Show the adaptive product finder UI and explain that the model only chose schema values.",
+      action: "Open generated UI",
+      run: () => setActiveTab("ui")
+    },
+    {
+      title: "Schema contract",
+      body: "Open the JSON output and point out that the renderer receives component types and props, not HTML.",
+      action: "Open schema",
+      run: () => {
+        setShowRejectedSchema(false);
+        setActiveTab("schema");
+      }
+    },
+    {
+      title: "Blocked output",
+      body: "Switch through rejected examples to show raw HTML, remote components, and fake product objects being blocked.",
+      action: "Show rejected examples",
+      run: () => {
+        setActiveRejectedExample("raw_html");
+        setShowRejectedSchema(true);
+        setActiveTab("schema");
+      }
+    },
+    {
+      title: "Schema comparison",
+      body: "Use the Model Output tab to compare the current schema with the deterministic baseline.",
+      action: "Open comparison",
+      run: () => setActiveTab("model")
+    },
+    {
+      title: "Share the demo",
+      body: "Copy a prompt-specific URL for README links, LinkedIn comments, or portfolio walkthroughs.",
+      action: "Copy demo link",
+      run: copyDemoLink
+    }
+  ];
+
+  return (
+    <section className="demoScriptGrid">
+      {steps.map((step, index) => (
+        <article className="demoStep" key={step.title}>
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <h3>{step.title}</h3>
+          <p>{step.body}</p>
+          <button type="button" onClick={step.run}>
+            {step.action}
+          </button>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 function RegistryView() {
   return (
     <section className="registryGrid">
@@ -437,12 +579,17 @@ function RegistryView() {
 function ModelOutputView({
   result,
   validation,
-  generationMode
+  generationMode,
+  prompt
 }: {
   result: GenerationResult;
   validation: ValidationResult;
   generationMode: GenerationMode;
+  prompt: string;
 }) {
+  const baselinePage = generateControlledPage(prompt);
+  const schemaDiff = getSchemaDiff(baselinePage, result.page);
+
   return (
     <section className="schemaGrid">
       <aside className="sidePanel">
@@ -471,10 +618,45 @@ function ModelOutputView({
             </div>
           )}
         </div>
+        <div className="diffPanel">
+          <PanelTitle icon={<Code2 size={18} />} title="Schema Comparison" />
+          <ul className="contractList">
+            {schemaDiff.map((item) => (
+              <li key={item}>
+                <CheckCircle2 size={16} /> {item}
+              </li>
+            ))}
+          </ul>
+        </div>
       </aside>
       <pre>{JSON.stringify(result.rawModelOutput ?? result.page, null, 2)}</pre>
     </section>
   );
+}
+
+function getSchemaDiff(baselinePage: GeneratedPage, currentPage: GeneratedPage) {
+  const baselineTypes = baselinePage.components.map((component) => component.type).join(" -> ");
+  const currentTypes = currentPage.components.map((component) => component.type).join(" -> ");
+  const baselineProducts = getRecommendedProductIds(baselinePage);
+  const currentProducts = getRecommendedProductIds(currentPage);
+  const changes = [
+    baselineTypes === currentTypes
+      ? "Component order matches the deterministic baseline."
+      : "Component order changed, but only registered component types are present.",
+    baselineProducts === currentProducts
+      ? "Recommended product IDs match the trusted baseline."
+      : "Recommended product IDs changed inside the trusted catalog boundary.",
+    currentPage.components.some((component) => component.type === "no_results")
+      ? "No-results state is controlled and does not invent unavailable products."
+      : "Renderer still receives product IDs instead of arbitrary product objects."
+  ];
+
+  return changes;
+}
+
+function getRecommendedProductIds(page: GeneratedPage) {
+  const recommendation = page.components.find((component) => component.type === "recommendation_cards");
+  return recommendation?.type === "recommendation_cards" ? recommendation.props.productIds.join(", ") : "none";
 }
 
 function GuardrailsView() {

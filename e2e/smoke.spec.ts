@@ -70,3 +70,15 @@ test("hydrates a shareable prompt URL", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Copy Demo Link" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Export Schema" })).toBeVisible();
 });
+
+test("opens the guided demo script and rejected examples", async ({ page }) => {
+  await page.goto("/?focus=studio");
+
+  await page.getByRole("button", { name: "Demo Script" }).click();
+  await expect(page.getByRole("heading", { name: "Schema comparison" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Show rejected examples" }).click();
+  await expect(page.getByRole("button", { name: "Raw HTML" })).toBeVisible();
+  await page.getByRole("button", { name: "Remote component" }).click();
+  await expect(page.getByText("Blocked: remote_component")).toBeVisible();
+});

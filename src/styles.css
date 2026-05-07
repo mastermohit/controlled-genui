@@ -98,6 +98,7 @@ h1 {
 .sidePanel,
 .productCard,
 .registryCard,
+.demoStep,
 .guardrailPanel,
 .historyItem,
 .comparisonWrap,
@@ -366,6 +367,78 @@ h1 {
 
 .schemaActions .secondaryButton {
   margin-top: 0;
+}
+
+.demoScriptGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.demoStep {
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+  padding: 18px;
+}
+
+.demoStep span {
+  color: #8a4b12;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.demoStep h3 {
+  margin: 10px 0 8px;
+  font-size: 1rem;
+}
+
+.demoStep p {
+  color: #53615d;
+  line-height: 1.55;
+}
+
+.demoStep button,
+.rejectedPicker button {
+  min-height: 38px;
+  border: 1px solid #cddbd7;
+  border-radius: 8px;
+  color: #1d3f3a;
+  background: #fff;
+  font-weight: 850;
+}
+
+.demoStep button {
+  margin-top: auto;
+}
+
+.rejectedPicker {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.rejectedPicker button {
+  width: 100%;
+}
+
+.rejectedPicker button.active {
+  color: #fff;
+  background: #26364a;
+  border-color: #26364a;
+}
+
+.rejectedPicker p {
+  margin: 0;
+  color: #53615d;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.diffPanel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e4e9e7;
 }
 
 .workspace,
@@ -919,7 +992,8 @@ th {
 
 @media (max-width: 1100px) {
   .recommendationGrid,
-  .registryGrid {
+  .registryGrid,
+  .demoScriptGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -933,7 +1007,8 @@ th {
   }
 
   .explainBand,
-  .registryGrid {
+  .registryGrid,
+  .demoScriptGrid {
     grid-template-columns: 1fr;
   }
 
@@ -1117,6 +1192,7 @@ th {
   .sidePanel,
   .productCard,
   .registryCard,
+  .demoStep,
   .guardrailPanel,
   .historyItem,
   .insight,
