@@ -12,6 +12,7 @@ The goal is not to test every pixel. The tests protect the safety boundaries tha
 - generated history, share links, and schema exports remain part of the demo surface
 - the walkthrough surface can demonstrate approved, compared, and rejected schemas
 - the Schema Inspector renders approved and rejected component-level registry, prop, Zod value, and trusted-data checks
+- clipboard and download flows work for demo links and generated schemas
 
 ## Local Commands
 
@@ -60,4 +61,3 @@ The current test files are:
 Good next additions:
 
 - visual checks for mobile layout regressions
-- clipboard and download assertions for share/export controls

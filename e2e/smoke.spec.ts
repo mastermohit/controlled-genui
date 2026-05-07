@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 test("runs the controlled generation demo flow", async ({ page }) => {
   await page.goto("/");
@@ -89,4 +90,38 @@ test("opens the guided demo script and rejected examples", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Raw HTML" })).toBeVisible();
   await page.getByRole("button", { name: "Remote component" }).click();
   await expect(page.getByText("Blocked: remote_component")).toBeVisible();
+});
+
+test("copies demo links and exports generated schema", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/?prompt=Find+a+laptop+for+coding+under+80000&mode=mock&focus=studio");
+
+  await page.getByRole("button", { name: "Copy Demo Link" }).click();
+  await expect(page.getByText("Demo link copied")).toBeVisible();
+  const copiedLink = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copiedLink).toContain("prompt=Find+a+laptop+for+coding+under+80000");
+  expect(copiedLink).toContain("mode=mock");
+  expect(copiedLink).toContain("focus=studio");
+
+  await page.getByRole("button", { name: "Copy Schema" }).click();
+  await expect(page.getByText("Schema copied")).toBeVisible();
+  const copiedSchema = JSON.parse(await page.evaluate(() => navigator.clipboard.readText()));
+  expect(copiedSchema).toMatchObject({
+    pageType: "product_finder",
+    schemaVersion: "1.0",
+    generatedFrom: "Find a laptop for coding under 80000"
+  });
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export Schema" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("controlled-genui-schema.json");
+  const downloadPath = await download.path();
+  expect(downloadPath).toBeTruthy();
+  const exportedSchema = JSON.parse(await readFile(downloadPath!, "utf8"));
+  expect(exportedSchema).toMatchObject({
+    pageType: "product_finder",
+    schemaVersion: "1.0",
+    generatedFrom: "Find a laptop for coding under 80000"
+  });
 });

@@ -67,6 +67,7 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Schema comparison notes in Model Output
 - Multiple rejected-schema examples
 - API route tests for prompt validation, provider fallback, invalid schemas, and rate limiting
+- Clipboard/download browser tests for demo sharing and schema export
 
 ## Controlled GenUI Principles
 

@@ -246,8 +246,10 @@ export function App() {
   async function copyDemoLink() {
     try {
       await copyText(buildDemoUrl(prompt, generationMode));
+      setSchemaStatus("");
       setShareStatus("Demo link copied");
     } catch {
+      setSchemaStatus("");
       setShareStatus("Unable to copy link");
     }
   }
@@ -255,8 +257,10 @@ export function App() {
   async function copySchema() {
     try {
       await copyText(JSON.stringify(page, null, 2));
+      setShareStatus("");
       setSchemaStatus("Schema copied");
     } catch {
+      setShareStatus("");
       setSchemaStatus("Unable to copy schema");
     }
   }
@@ -269,6 +273,7 @@ export function App() {
     anchor.download = "controlled-genui-schema.json";
     anchor.click();
     URL.revokeObjectURL(url);
+    setShareStatus("");
     setSchemaStatus("Schema exported");
   }
 
