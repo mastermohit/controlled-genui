@@ -16,18 +16,20 @@ import {
   Loader2,
   Play,
   RotateCcw,
+  SearchCheck,
   ShieldCheck,
   SlidersHorizontal,
   WandSparkles,
   X
 } from "lucide-react";
 import { ControlledRenderer } from "./components/ControlledRenderer";
+import { productById } from "./data/products";
 import { generateControlledPage } from "./generator";
 import { generateWithLlm } from "./llmGenerator";
 import { componentRegistry, validateGeneratedPage, validateUnknownPage } from "./schema";
 import type { GeneratedPage, GenerationMode, GenerationResult, HistoryItem, Product, ValidationResult } from "./types";
 
-type StudioTab = "demo" | "ui" | "schema" | "model" | "registry" | "guardrails" | "history";
+type StudioTab = "demo" | "ui" | "schema" | "inspector" | "model" | "registry" | "guardrails" | "history";
 
 const examples = [
   "Find me a laptop for coding, gaming, and college under INR 80,000",
@@ -99,7 +101,17 @@ const historyStorageKey = "controlled-genui:history";
 
 function getInitialTab(): StudioTab {
   const tab = new URLSearchParams(window.location.search).get("tab");
-  if (tab === "demo" || tab === "schema" || tab === "model" || tab === "registry" || tab === "guardrails" || tab === "history") return tab;
+  if (
+    tab === "demo" ||
+    tab === "schema" ||
+    tab === "inspector" ||
+    tab === "model" ||
+    tab === "registry" ||
+    tab === "guardrails" ||
+    tab === "history"
+  ) {
+    return tab;
+  }
   return "ui";
 }
 
@@ -344,6 +356,7 @@ export function App() {
           <TabButton tab="demo" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ClipboardList size={16} />} label="Demo Script" />
           <TabButton tab="ui" activeTab={activeTab} setActiveTab={setActiveTab} icon={<LayoutDashboard size={16} />} label="Generated UI" />
           <TabButton tab="schema" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Code2 size={16} />} label="Schema" />
+          <TabButton tab="inspector" activeTab={activeTab} setActiveTab={setActiveTab} icon={<SearchCheck size={16} />} label="Inspector" />
           <TabButton tab="model" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Cpu size={16} />} label="Model Output" />
           <TabButton tab="registry" activeTab={activeTab} setActiveTab={setActiveTab} icon={<Library size={16} />} label="Registry" />
           <TabButton tab="guardrails" activeTab={activeTab} setActiveTab={setActiveTab} icon={<ShieldCheck size={16} />} label="Guardrails" />
@@ -440,6 +453,7 @@ export function App() {
         )}
 
         {activeTab === "registry" && <RegistryView />}
+        {activeTab === "inspector" && <SchemaInspectorView page={page} />}
         {activeTab === "model" && <ModelOutputView result={lastGeneration} validation={validation} generationMode={generationMode} prompt={prompt} />}
         {activeTab === "guardrails" && <GuardrailsView />}
         {activeTab === "history" && <HistoryView history={history} restoreHistory={restoreHistory} />}
@@ -574,6 +588,97 @@ function RegistryView() {
       ))}
     </section>
   );
+}
+
+function SchemaInspectorView({ page }: { page: GeneratedPage }) {
+  return (
+    <section className="inspectorGrid">
+      {page.components.map((component, index) => {
+        const registryItem = componentRegistry.find((item) => item.type === component.type);
+        const receivedProps = Object.keys(component.props);
+        const allowedProps = registryItem?.allowedProps ?? [];
+        const unexpectedProps = receivedProps.filter((prop) => !allowedProps.includes(prop));
+        const missingProps = allowedProps.filter((prop) => !receivedProps.includes(prop));
+        const productIds = getComponentProductIds(component);
+        const resolvedProducts = productIds.map((id) => productById.get(id)?.name ?? `Unknown: ${id}`);
+        const risk = getComponentRisk(component.type, unexpectedProps.length, missingProps.length);
+
+        return (
+          <article className="inspectorCard" key={`${component.type}-${index}`}>
+            <div className="inspectorTop">
+              <span className="inspectorIndex">#{index + 1}</span>
+              <span className={`riskPill ${risk.level}`}>{risk.label}</span>
+            </div>
+            <h3>{component.type}</h3>
+            <p>{registryItem?.purpose ?? "This component is not registered."}</p>
+
+            <div className="inspectorSection">
+              <strong>Renderer path</strong>
+              <span>{`ControlledRenderer -> switch("${component.type}")`}</span>
+            </div>
+
+            <div className="inspectorSection">
+              <strong>Allowed props</strong>
+              <div className="propList">
+                {allowedProps.map((prop) => (
+                  <span key={prop}>{prop}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="inspectorSection">
+              <strong>Received props</strong>
+              <div className="propList">
+                {receivedProps.map((prop) => (
+                  <span key={prop}>{prop}</span>
+                ))}
+              </div>
+            </div>
+
+            <ul className="inspectorChecks">
+              <li>
+                <CheckCircle2 size={15} />
+                {registryItem ? "Registered component type" : "Unregistered component type"}
+              </li>
+              <li>
+                <CheckCircle2 size={15} />
+                {unexpectedProps.length === 0 ? "No unexpected prop names" : `Unexpected props: ${unexpectedProps.join(", ")}`}
+              </li>
+              <li>
+                <CheckCircle2 size={15} />
+                {missingProps.length === 0 ? "Required prop names are present" : `Missing props: ${missingProps.join(", ")}`}
+              </li>
+              <li>
+                <CheckCircle2 size={15} />
+                {productIds.length > 0
+                  ? `Trusted catalog ids: ${resolvedProducts.join(", ")}`
+                  : "No trusted product lookup needed"}
+              </li>
+            </ul>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
+function getComponentProductIds(component: GeneratedPage["components"][number]) {
+  if (component.type === "recommendation_cards" || component.type === "comparison_table") {
+    return component.props.productIds;
+  }
+  return [];
+}
+
+function getComponentRisk(type: GeneratedPage["components"][number]["type"], unexpectedCount: number, missingCount: number) {
+  if (unexpectedCount > 0 || missingCount > 0) {
+    return { level: "warning", label: "Needs review" };
+  }
+
+  if (type === "recommendation_cards" || type === "comparison_table") {
+    return { level: "data", label: "Trusted data" };
+  }
+
+  return { level: "safe", label: "Safe" };
 }
 
 function ModelOutputView({

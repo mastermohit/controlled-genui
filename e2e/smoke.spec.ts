@@ -26,6 +26,10 @@ test("runs the controlled generation demo flow", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "intent_summary" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "recommendation_cards" })).toBeVisible();
 
+  await page.getByRole("button", { name: "Inspector" }).click();
+  await expect(page.getByText('ControlledRenderer -> switch("recommendation_cards")')).toBeVisible();
+  await expect(page.getByText("Trusted catalog ids: Lenovo LOQ 15, HP Victus 16, ASUS Vivobook Pro 15").first()).toBeVisible();
+
   await page.getByRole("button", { name: "Guardrails" }).click();
   await expect(page.getByText("Raw HTML, script tags, iframe embeds, and remote component URLs have no render path.")).toBeVisible();
 

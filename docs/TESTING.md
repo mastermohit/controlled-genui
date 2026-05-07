@@ -11,6 +11,7 @@ The goal is not to test every pixel. The tests protect the safety boundaries tha
 - the main browser demo flow stays usable on desktop and mobile
 - generated history, share links, and schema exports remain part of the demo surface
 - the walkthrough surface can demonstrate approved, compared, and rejected schemas
+- the Schema Inspector renders component-level registry, prop, and trusted-data checks
 
 ## Local Commands
 

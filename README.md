@@ -63,6 +63,7 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Shareable demo links with `prompt` and `mode` query params
 - Copy/export controls for generated schemas
 - Guided Demo Script tab for walkthroughs
+- Schema Inspector for component-level registry and prop checks
 - Schema comparison notes in Model Output
 - Multiple rejected-schema examples
 
@@ -118,6 +119,8 @@ Use **Copy Schema** or **Export Schema** to share the generated JSON contract be
 Generated history is saved to `localStorage`, so refreshing the demo does not wipe prior runs.
 
 Use **Demo Script** during a recording or live walkthrough. It steps through the generated UI, schema contract, rejected examples, schema comparison, and shareable demo link.
+
+Use **Inspector** to explain each generated component: registry status, renderer path, allowed props, received props, and trusted product ID resolution.
 
 ## Tech Stack
 
@@ -260,10 +263,11 @@ api/
 3. Show that the generated product cards, comparison table, and insight panel change.
 4. Open the Schema tab and explain that the UI came from JSON.
 5. Toggle rejected schema examples and show raw HTML, remote components, and fake product objects being blocked.
-6. Open the Registry tab and show the approved component list.
-7. Open Guardrails and explain what the generator can and cannot do.
-8. Open Model Output and show how the schema compares with the deterministic baseline.
-9. Open a product detail drawer and explain that details come from trusted product ids.
+6. Open Inspector and explain how each component is approved and rendered.
+7. Open the Registry tab and show the approved component list.
+8. Open Guardrails and explain what the generator can and cannot do.
+9. Open Model Output and show how the schema compares with the deterministic baseline.
+10. Open a product detail drawer and explain that details come from trusted product ids.
 
 ## Future Phase Ideas
 
