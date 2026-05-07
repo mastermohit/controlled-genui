@@ -120,7 +120,7 @@ Generated history is saved to `localStorage`, so refreshing the demo does not wi
 
 Use **Demo Script** during a recording or live walkthrough. It steps through the generated UI, schema contract, rejected examples, schema comparison, and shareable demo link.
 
-Use **Inspector** to explain each generated component: registry status, renderer path, allowed props, received props, and trusted product ID resolution.
+Use **Inspector** to explain each generated component: registry status, renderer path, allowed props, received props, Zod value validation, and trusted product ID resolution.
 
 ## Tech Stack
 

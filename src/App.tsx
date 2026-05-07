@@ -27,6 +27,7 @@ import { productById } from "./data/products";
 import { generateControlledPage } from "./generator";
 import { generateWithLlm } from "./llmGenerator";
 import { componentRegistry, validateGeneratedPage, validateUnknownPage } from "./schema";
+import { controlledComponentSchema } from "./structuredSchema";
 import type { GeneratedPage, GenerationMode, GenerationResult, HistoryItem, Product, ValidationResult } from "./types";
 
 type StudioTab = "demo" | "ui" | "schema" | "inspector" | "model" | "registry" | "guardrails" | "history";
@@ -601,7 +602,14 @@ function SchemaInspectorView({ page }: { page: GeneratedPage }) {
         const missingProps = allowedProps.filter((prop) => !receivedProps.includes(prop));
         const productIds = getComponentProductIds(component);
         const resolvedProducts = productIds.map((id) => productById.get(id)?.name ?? `Unknown: ${id}`);
-        const risk = getComponentRisk(component.type, unexpectedProps.length, missingProps.length);
+        const componentValidation = controlledComponentSchema.safeParse(component);
+        const validationIssues = componentValidation.success
+          ? []
+          : componentValidation.error.issues.map((issue) => {
+              const path = issue.path.length > 0 ? issue.path.join(".") : component.type;
+              return `${path}: ${issue.message}`;
+            });
+        const risk = getComponentRisk(component.type, unexpectedProps.length, missingProps.length, validationIssues.length);
 
         return (
           <article className="inspectorCard" key={`${component.type}-${index}`}>
@@ -635,6 +643,22 @@ function SchemaInspectorView({ page }: { page: GeneratedPage }) {
               </div>
             </div>
 
+            <div className="inspectorSection">
+              <strong>Value validation</strong>
+              {validationIssues.length === 0 ? (
+                <span>Props match the Zod shape for {component.type}</span>
+              ) : (
+                <ul className="validationIssues">
+                  {validationIssues.map((issue) => (
+                    <li key={issue}>
+                      <AlertTriangle size={15} />
+                      {issue}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <ul className="inspectorChecks">
               <li>
                 <CheckCircle2 size={15} />
@@ -647,6 +671,10 @@ function SchemaInspectorView({ page }: { page: GeneratedPage }) {
               <li>
                 <CheckCircle2 size={15} />
                 {missingProps.length === 0 ? "Required prop names are present" : `Missing props: ${missingProps.join(", ")}`}
+              </li>
+              <li>
+                <CheckCircle2 size={15} />
+                {validationIssues.length === 0 ? "Prop values passed runtime validation" : "Prop values failed runtime validation"}
               </li>
               <li>
                 <CheckCircle2 size={15} />
@@ -669,8 +697,13 @@ function getComponentProductIds(component: GeneratedPage["components"][number]) 
   return [];
 }
 
-function getComponentRisk(type: GeneratedPage["components"][number]["type"], unexpectedCount: number, missingCount: number) {
-  if (unexpectedCount > 0 || missingCount > 0) {
+function getComponentRisk(
+  type: GeneratedPage["components"][number]["type"],
+  unexpectedCount: number,
+  missingCount: number,
+  validationIssueCount: number
+) {
+  if (unexpectedCount > 0 || missingCount > 0 || validationIssueCount > 0) {
     return { level: "warning", label: "Needs review" };
   }
 
