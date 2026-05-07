@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const outputDir = process.platform === "win32" && !process.env.CI ? "C:/tmp/controlled-genui-test-results" : "test-results";
+const outputDir =
+  process.platform === "win32" && !process.env.CI
+    ? `./test-results/local-${process.pid}`
+    : "test-results";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -18,7 +21,7 @@ export default defineConfig({
   webServer: {
     command: "npm run preview -- --port 4173",
     url: "http://127.0.0.1:4173",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000
   },
   projects: [

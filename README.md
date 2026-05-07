@@ -69,6 +69,7 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - API route tests for prompt validation, provider fallback, invalid schemas, and rate limiting
 - Clipboard/download browser tests for demo sharing and schema export
 - PNG export for the generated UI surface
+- Prompt Examples Gallery for guided showcase scenarios
 
 ## Controlled GenUI Principles
 
@@ -126,6 +127,8 @@ Generated history is saved to `localStorage`, so refreshing the demo does not wi
 Use **Demo Script** during a recording or live walkthrough. It steps through the generated UI, schema contract, rejected examples, schema comparison, and shareable demo link.
 
 Use **Inspector** to explain approved and rejected components: registry status, renderer path, allowed props, received props, Zod value validation, blocked component types, and trusted product ID resolution.
+
+Use the **Prompt Examples Gallery** on the hero panel to quickly load balanced, travel, college, no-results, LLM, and blocked-schema demo scenarios.
 
 ## Tech Stack
 

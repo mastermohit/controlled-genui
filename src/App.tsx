@@ -39,6 +39,49 @@ const examples = [
   "Suggest a laptop for college, classes, and casual coding under 65k"
 ];
 
+const promptGallery = [
+  {
+    id: "balanced",
+    title: "Balanced match",
+    description: "A strong all-round prompt that lands in the trusted gaming plus coding range.",
+    prompt: examples[0],
+    mode: "mock" as const,
+    badge: "Recommended"
+  },
+  {
+    id: "travel",
+    title: "Travel laptop",
+    description: "Shows a lighter-use prompt with portability and coding constraints.",
+    prompt: examples[1],
+    mode: "mock" as const,
+    badge: "Portable"
+  },
+  {
+    id: "college",
+    title: "College daily driver",
+    description: "A lower-budget prompt for classes, casual coding, and everyday battery life.",
+    prompt: examples[2],
+    mode: "mock" as const,
+    badge: "Student"
+  },
+  {
+    id: "no-results",
+    title: "Impossible budget",
+    description: "Demonstrates the controlled no-results state instead of inventing fake products.",
+    prompt: "Find a laptop for coding under INR 20,000",
+    mode: "mock" as const,
+    badge: "Guardrail"
+  },
+  {
+    id: "llm-share",
+    title: "LLM share link",
+    description: "Prepares a shareable LLM prompt for live schema generation when the API route is available.",
+    prompt: "Find a laptop for coding under INR 80,000",
+    mode: "llm" as const,
+    badge: "LLM"
+  }
+] as const;
+
 const rejectedExamples = [
   {
     id: "raw_html",
@@ -313,6 +356,24 @@ export function App() {
     setImageStatus("UI image exported");
   }
 
+  function applyGalleryExample(example: (typeof promptGallery)[number]) {
+    setPrompt(example.prompt);
+    setGenerationMode(example.mode);
+    setShowRejectedSchema(false);
+    setShareStatus("");
+    setSchemaStatus("");
+    setImageStatus("");
+  }
+
+  function openRejectedGalleryExample() {
+    setShowRejectedSchema(true);
+    setActiveRejectedExample("raw_html");
+    setActiveTab("schema");
+    setShareStatus("");
+    setSchemaStatus("");
+    setImageStatus("");
+  }
+
   return (
     <main>
       {!focusStudio && (
@@ -347,12 +408,35 @@ export function App() {
                   <RotateCcw size={17} />
                 </button>
               </div>
-              <div className="examples">
-                {examples.map((example) => (
-                  <button key={example} type="button" onClick={() => setPrompt(example)}>
-                    {example}
-                  </button>
+              <div className="examples" aria-label="Prompt examples gallery">
+                {promptGallery.map((example) => (
+                  <article className="exampleCard" key={example.id}>
+                    <div className="exampleCardTop">
+                      <strong>{example.title}</strong>
+                      <span>{example.badge}</span>
+                    </div>
+                    <p>{example.description}</p>
+                    <code>{example.prompt}</code>
+                    <button
+                      type="button"
+                      onClick={() => applyGalleryExample(example)}
+                      aria-label={`Use ${example.title} example`}
+                    >
+                      Use example
+                    </button>
+                  </article>
                 ))}
+                <article className="exampleCard blockedExample">
+                  <div className="exampleCardTop">
+                    <strong>Blocked schema demo</strong>
+                    <span>Blocked</span>
+                  </div>
+                  <p>Jump straight to the rejected schema flow and show why raw HTML has no render path.</p>
+                  <code>raw_html, remote_component, external_product_card</code>
+                  <button type="button" onClick={openRejectedGalleryExample} aria-label="Open rejected schema">
+                    Open rejected schema
+                  </button>
+                </article>
               </div>
               <div className="modeSwitch" aria-label="Generation mode">
                 <button type="button" className={generationMode === "mock" ? "active" : ""} onClick={() => setGenerationMode("mock")}>
@@ -406,19 +490,19 @@ export function App() {
         </nav>
 
         <div className="shareBar" aria-label="Demo sharing tools">
-          <button type="button" onClick={copyDemoLink}>
+          <button type="button" onClick={copyDemoLink} aria-label="Copy Demo Link">
             <Link2 size={16} />
             Copy Demo Link
           </button>
-          <button type="button" onClick={copySchema}>
+          <button type="button" onClick={copySchema} aria-label="Copy Schema">
             <Copy size={16} />
             Copy Schema
           </button>
-          <button type="button" onClick={exportSchema}>
+          <button type="button" onClick={exportSchema} aria-label="Export Schema">
             <Download size={16} />
             Export Schema
           </button>
-          <button type="button" onClick={exportUiImage}>
+          <button type="button" onClick={exportUiImage} aria-label="Export UI Image">
             <Image size={16} />
             Export UI Image
           </button>

@@ -57,6 +57,21 @@ test("shows a controlled no-results state for impossible catalog requests", asyn
   await expect(page.getByText("Lenovo LOQ 15")).toHaveCount(0);
 });
 
+test("applies prompt gallery scenarios for guided demos", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Use Impossible budget example" }).click();
+  await expect(page.getByLabel("Product finder prompt")).toHaveValue("Find a laptop for coding under INR 20,000");
+
+  await page.getByRole("button", { name: "Generate", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "No trusted catalog match" })).toBeVisible();
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open rejected schema" }).click();
+  await expect(page.getByRole("button", { name: "Raw HTML" })).toBeVisible();
+  await expect(page.getByText("Blocked: raw_html")).toBeVisible();
+});
+
 test("keeps the studio usable on a mobile viewport", async ({ page }) => {
   await page.goto("/?focus=studio");
 
