@@ -1,5 +1,7 @@
 # Controlled GenUI Product Finder
 
+[![CI](https://github.com/mastermohit/controlled-genui/actions/workflows/ci.yml/badge.svg)](https://github.com/mastermohit/controlled-genui/actions/workflows/ci.yml)
+
 A demo project that showcases the **Controlled** pillar of Generative UI.
 
 Instead of allowing an AI model to generate arbitrary HTML, this app treats the model as a planner. The generated output is a strict JSON schema, and the frontend can only render components from a fixed registry.
@@ -49,6 +51,14 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Mock/LLM mode switch
 - Model Output tab showing raw model output, validation, and fallback status
 - Safe fallback to deterministic mock generation when no API key is configured
+
+## Phase 4 Features
+
+- Vitest coverage for generator, schema, and catalog guardrails
+- Playwright browser smoke tests for the demo flow
+- Local verification command with `npm run verify`
+- GitHub Actions CI for every push and pull request
+- Testing documentation for the Controlled GenUI contract
 
 ## Controlled GenUI Principles
 
@@ -116,6 +126,26 @@ This starts Vite only. In this mode, the `/api/generate-schema` serverless route
 ```powershell
 npm run build
 ```
+
+## Test
+
+```powershell
+npm test
+```
+
+Run tests and production build together:
+
+```powershell
+npm run verify
+```
+
+Run browser smoke tests:
+
+```powershell
+npm run test:e2e
+```
+
+More detail: [docs/TESTING.md](docs/TESTING.md)
 
 ## Enable LLM Mode
 
