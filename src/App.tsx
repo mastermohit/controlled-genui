@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useRef } from "react";
+import html2canvas from "html2canvas";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,6 +11,7 @@ import {
   Cpu,
   Download,
   History,
+  Image,
   Link2,
   LayoutDashboard,
   Library,
@@ -170,6 +173,8 @@ export function App() {
   });
   const [shareStatus, setShareStatus] = useState("");
   const [schemaStatus, setSchemaStatus] = useState("");
+  const [imageStatus, setImageStatus] = useState("");
+  const generatedSurfaceRef = useRef<HTMLDivElement | null>(null);
   const [showRejectedSchema, setShowRejectedSchema] = useState(
     new URLSearchParams(window.location.search).get("rejected") === "1"
   );
@@ -200,6 +205,7 @@ export function App() {
     setIsGenerating(true);
     setShareStatus("");
     setSchemaStatus("");
+    setImageStatus("");
     const result =
       generationMode === "llm"
         ? await generateWithLlm(prompt)
@@ -247,9 +253,11 @@ export function App() {
     try {
       await copyText(buildDemoUrl(prompt, generationMode));
       setSchemaStatus("");
+      setImageStatus("");
       setShareStatus("Demo link copied");
     } catch {
       setSchemaStatus("");
+      setImageStatus("");
       setShareStatus("Unable to copy link");
     }
   }
@@ -258,9 +266,11 @@ export function App() {
     try {
       await copyText(JSON.stringify(page, null, 2));
       setShareStatus("");
+      setImageStatus("");
       setSchemaStatus("Schema copied");
     } catch {
       setShareStatus("");
+      setImageStatus("");
       setSchemaStatus("Unable to copy schema");
     }
   }
@@ -274,7 +284,32 @@ export function App() {
     anchor.click();
     URL.revokeObjectURL(url);
     setShareStatus("");
+    setImageStatus("");
     setSchemaStatus("Schema exported");
+  }
+
+  async function exportUiImage() {
+    const surface = generatedSurfaceRef.current;
+    if (!surface) {
+      setShareStatus("");
+      setSchemaStatus("");
+      setImageStatus("Open Generated UI to export the current surface");
+      return;
+    }
+
+    const canvas = await html2canvas(surface, {
+      backgroundColor: "#f6f5f0",
+      scale: 2,
+      useCORS: true
+    });
+
+    const anchor = document.createElement("a");
+    anchor.href = canvas.toDataURL("image/png");
+    anchor.download = "controlled-genui-surface.png";
+    anchor.click();
+    setShareStatus("");
+    setSchemaStatus("");
+    setImageStatus("UI image exported");
   }
 
   return (
@@ -382,7 +417,11 @@ export function App() {
             <Download size={16} />
             Export Schema
           </button>
-          {(shareStatus || schemaStatus) && <span>{shareStatus || schemaStatus}</span>}
+          <button type="button" onClick={exportUiImage}>
+            <Image size={16} />
+            Export UI Image
+          </button>
+          {(shareStatus || schemaStatus || imageStatus) && <span>{shareStatus || schemaStatus || imageStatus}</span>}
         </div>
 
         {activeTab === "demo" && (
@@ -405,7 +444,9 @@ export function App() {
                 <li><CheckCircle2 size={16} /> No raw HTML rendering path</li>
               </ul>
             </aside>
-            <ControlledRenderer page={page} onSelectProduct={setSelectedProduct} />
+            <div ref={generatedSurfaceRef}>
+              <ControlledRenderer page={page} onSelectProduct={setSelectedProduct} />
+            </div>
           </section>
         )}
 

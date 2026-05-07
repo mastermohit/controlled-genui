@@ -13,6 +13,7 @@ The goal is not to test every pixel. The tests protect the safety boundaries tha
 - the walkthrough surface can demonstrate approved, compared, and rejected schemas
 - the Schema Inspector renders approved and rejected component-level registry, prop, Zod value, and trusted-data checks
 - clipboard and download flows work for demo links and generated schemas
+- PNG export works for the generated UI surface
 
 ## Local Commands
 

@@ -68,6 +68,7 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Multiple rejected-schema examples
 - API route tests for prompt validation, provider fallback, invalid schemas, and rate limiting
 - Clipboard/download browser tests for demo sharing and schema export
+- PNG export for the generated UI surface
 
 ## Controlled GenUI Principles
 
@@ -117,6 +118,8 @@ The studio can open directly from a prompt and generation mode:
 Use **Copy Demo Link** to copy the current prompt and mode as a shareable URL.
 
 Use **Copy Schema** or **Export Schema** to share the generated JSON contract behind the UI.
+
+Use **Export UI Image** to download the current generated surface as a PNG for README updates, LinkedIn posts, or portfolio screenshots.
 
 Generated history is saved to `localStorage`, so refreshing the demo does not wipe prior runs.
 

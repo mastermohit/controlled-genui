@@ -124,4 +124,14 @@ test("copies demo links and exports generated schema", async ({ page, context })
     schemaVersion: "1.0",
     generatedFrom: "Find a laptop for coding under 80000"
   });
+
+  const imageDownloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export UI Image" }).click();
+  await expect(page.getByText("UI image exported")).toBeVisible();
+  const imageDownload = await imageDownloadPromise;
+  expect(imageDownload.suggestedFilename()).toBe("controlled-genui-surface.png");
+  const imagePath = await imageDownload.path();
+  expect(imagePath).toBeTruthy();
+  const imageBuffer = await readFile(imagePath!);
+  expect(imageBuffer.byteLength).toBeGreaterThan(1000);
 });
