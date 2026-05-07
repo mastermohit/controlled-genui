@@ -454,7 +454,14 @@ export function App() {
         )}
 
         {activeTab === "registry" && <RegistryView />}
-        {activeTab === "inspector" && <SchemaInspectorView page={page} />}
+        {activeTab === "inspector" && (
+          <SchemaInspectorView
+            page={page}
+            rejectedExample={rejectedExample}
+            activeRejectedExample={activeRejectedExample}
+            setActiveRejectedExample={setActiveRejectedExample}
+          />
+        )}
         {activeTab === "model" && <ModelOutputView result={lastGeneration} validation={validation} generationMode={generationMode} prompt={prompt} />}
         {activeTab === "guardrails" && <GuardrailsView />}
         {activeTab === "history" && <HistoryView history={history} restoreHistory={restoreHistory} />}
@@ -591,10 +598,57 @@ function RegistryView() {
   );
 }
 
-function SchemaInspectorView({ page }: { page: GeneratedPage }) {
+function SchemaInspectorView({
+  page,
+  rejectedExample,
+  activeRejectedExample,
+  setActiveRejectedExample
+}: {
+  page: GeneratedPage;
+  rejectedExample: (typeof rejectedExamples)[number];
+  activeRejectedExample: (typeof rejectedExamples)[number]["id"];
+  setActiveRejectedExample: (id: (typeof rejectedExamples)[number]["id"]) => void;
+}) {
+  const [mode, setMode] = useState<"approved" | "rejected">("approved");
+  const inspectedSchema = mode === "approved" ? page : rejectedExample.schema;
+  const components = getInspectableComponents(inspectedSchema);
+
   return (
-    <section className="inspectorGrid">
-      {page.components.map((component, index) => {
+    <section className="inspectorShell">
+      <aside className="sidePanel">
+        <PanelTitle icon={<SearchCheck size={18} />} title="Inspector Mode" />
+        <div className="modeSwitch inspectorModeSwitch" aria-label="Inspector mode">
+          <button type="button" className={mode === "approved" ? "active" : ""} onClick={() => setMode("approved")}>
+            Approved
+          </button>
+          <button type="button" className={mode === "rejected" ? "active" : ""} onClick={() => setMode("rejected")}>
+            Rejected
+          </button>
+        </div>
+        {mode === "rejected" && (
+          <div className="rejectedPicker" aria-label="Inspector rejected schema examples">
+            {rejectedExamples.map((example) => (
+              <button
+                key={example.id}
+                type="button"
+                className={activeRejectedExample === example.id ? "active" : ""}
+                onClick={() => setActiveRejectedExample(example.id)}
+              >
+                {example.label}
+              </button>
+            ))}
+            <p>{rejectedExample.description}</p>
+          </div>
+        )}
+        <div className="inspectorSummary">
+          <strong>{mode === "approved" ? "Approved schema" : "Rejected schema"}</strong>
+          <span>{components.length} component{components.length === 1 ? "" : "s"} inspected</span>
+          <span>{mode === "approved" ? "Renderer can process this schema." : "Renderer receives no render path for blocked types."}</span>
+        </div>
+      </aside>
+
+      <div className="inspectorGrid">
+      {components.map((component, index) => {
         const registryItem = componentRegistry.find((item) => item.type === component.type);
         const receivedProps = Object.keys(component.props);
         const allowedProps = registryItem?.allowedProps ?? [];
@@ -603,13 +657,8 @@ function SchemaInspectorView({ page }: { page: GeneratedPage }) {
         const productIds = getComponentProductIds(component);
         const resolvedProducts = productIds.map((id) => productById.get(id)?.name ?? `Unknown: ${id}`);
         const componentValidation = controlledComponentSchema.safeParse(component);
-        const validationIssues = componentValidation.success
-          ? []
-          : componentValidation.error.issues.map((issue) => {
-              const path = issue.path.length > 0 ? issue.path.join(".") : component.type;
-              return `${path}: ${issue.message}`;
-            });
-        const risk = getComponentRisk(component.type, unexpectedProps.length, missingProps.length, validationIssues.length);
+        const validationIssues = getComponentValidationIssues(component.type, Boolean(registryItem), componentValidation);
+        const risk = getComponentRisk(component.type, Boolean(registryItem), unexpectedProps.length, missingProps.length, validationIssues.length);
 
         return (
           <article className="inspectorCard" key={`${component.type}-${index}`}>
@@ -622,15 +671,15 @@ function SchemaInspectorView({ page }: { page: GeneratedPage }) {
 
             <div className="inspectorSection">
               <strong>Renderer path</strong>
-              <span>{`ControlledRenderer -> switch("${component.type}")`}</span>
+              <span>{registryItem ? `ControlledRenderer -> switch("${component.type}")` : "No renderer path exists for this component type"}</span>
             </div>
 
             <div className="inspectorSection">
               <strong>Allowed props</strong>
               <div className="propList">
-                {allowedProps.map((prop) => (
+                {allowedProps.length > 0 ? allowedProps.map((prop) => (
                   <span key={prop}>{prop}</span>
-                ))}
+                )) : <span>none</span>}
               </div>
             </div>
 
@@ -662,7 +711,7 @@ function SchemaInspectorView({ page }: { page: GeneratedPage }) {
             <ul className="inspectorChecks">
               <li>
                 <CheckCircle2 size={15} />
-                {registryItem ? "Registered component type" : "Unregistered component type"}
+                {registryItem ? "Registered component type" : "Blocked before render: unregistered component type"}
               </li>
               <li>
                 <CheckCircle2 size={15} />
@@ -686,23 +735,61 @@ function SchemaInspectorView({ page }: { page: GeneratedPage }) {
           </article>
         );
       })}
+      </div>
     </section>
   );
 }
 
-function getComponentProductIds(component: GeneratedPage["components"][number]) {
+type InspectableComponent = {
+  type: string;
+  props: Record<string, unknown>;
+};
+
+function getInspectableComponents(schema: unknown): InspectableComponent[] {
+  if (!isRecord(schema) || !Array.isArray(schema.components)) return [];
+
+  return schema.components.map((component) => {
+    if (!isRecord(component)) return { type: "malformed_component", props: {} };
+    const type = typeof component.type === "string" ? component.type : "malformed_component";
+    const props = isRecord(component.props) ? component.props : {};
+    return { type, props };
+  });
+}
+
+function getComponentProductIds(component: InspectableComponent) {
   if (component.type === "recommendation_cards" || component.type === "comparison_table") {
-    return component.props.productIds;
+    return Array.isArray(component.props.productIds)
+      ? component.props.productIds.filter((id): id is string => typeof id === "string")
+      : [];
   }
   return [];
 }
 
+function getComponentValidationIssues(
+  type: string,
+  isRegistered: boolean,
+  result: ReturnType<typeof controlledComponentSchema.safeParse>
+) {
+  if (!isRegistered) return [`type: "${type}" is not registered`];
+  if (result.success) return [];
+
+  return result.error.issues.map((issue) => {
+    const path = issue.path.length > 0 ? issue.path.join(".") : type;
+    return `${path}: ${issue.message}`;
+  });
+}
+
 function getComponentRisk(
-  type: GeneratedPage["components"][number]["type"],
+  type: string,
+  isRegistered: boolean,
   unexpectedCount: number,
   missingCount: number,
   validationIssueCount: number
 ) {
+  if (!isRegistered) {
+    return { level: "blocked", label: "Blocked" };
+  }
+
   if (unexpectedCount > 0 || missingCount > 0 || validationIssueCount > 0) {
     return { level: "warning", label: "Needs review" };
   }
@@ -712,6 +799,10 @@ function getComponentRisk(
   }
 
   return { level: "safe", label: "Safe" };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function ModelOutputView({

@@ -30,6 +30,9 @@ test("runs the controlled generation demo flow", async ({ page }) => {
   await expect(page.getByText('ControlledRenderer -> switch("recommendation_cards")')).toBeVisible();
   await expect(page.getByText("Props match the Zod shape for recommendation_cards")).toBeVisible();
   await expect(page.getByText("Trusted catalog ids: Lenovo LOQ 15, HP Victus 16, ASUS Vivobook Pro 15").first()).toBeVisible();
+  await page.getByRole("button", { name: "Rejected" }).click();
+  await expect(page.getByText("No renderer path exists for this component type")).toBeVisible();
+  await expect(page.getByText('type: "raw_html" is not registered')).toBeVisible();
 
   await page.getByRole("button", { name: "Guardrails" }).click();
   await expect(page.getByText("Raw HTML, script tags, iframe embeds, and remote component URLs have no render path.")).toBeVisible();
