@@ -1,12 +1,15 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
   ClipboardList,
   Code2,
+  Copy,
   Cpu,
+  Download,
   History,
+  Link2,
   LayoutDashboard,
   Library,
   LockKeyhole,
@@ -46,26 +49,68 @@ const unsafeSchema = {
   ]
 };
 
+const historyStorageKey = "controlled-genui:history";
+
 function getInitialTab(): StudioTab {
   const tab = new URLSearchParams(window.location.search).get("tab");
   if (tab === "schema" || tab === "model" || tab === "registry" || tab === "guardrails" || tab === "history") return tab;
   return "ui";
 }
 
+function getInitialPrompt() {
+  return new URLSearchParams(window.location.search).get("prompt") || examples[0];
+}
+
+function getInitialMode(): GenerationMode {
+  return new URLSearchParams(window.location.search).get("mode") === "llm" ? "llm" : "mock";
+}
+
+function getStoredHistory(): HistoryItem[] {
+  try {
+    const stored = window.localStorage.getItem(historyStorageKey);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.slice(0, 12) : [];
+  } catch {
+    return [];
+  }
+}
+
+function buildDemoUrl(prompt: string, mode: GenerationMode) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("prompt", prompt);
+  url.searchParams.set("mode", mode);
+  url.searchParams.set("focus", "studio");
+  return url.toString();
+}
+
+function updateDemoUrl(prompt: string, mode: GenerationMode) {
+  window.history.replaceState(null, "", buildDemoUrl(prompt, mode));
+}
+
+async function copyText(value: string) {
+  await navigator.clipboard.writeText(value);
+}
+
 export function App() {
   const focusStudio = new URLSearchParams(window.location.search).get("focus") === "studio";
-  const [prompt, setPrompt] = useState(examples[0]);
-  const [page, setPage] = useState<GeneratedPage>(() => generateControlledPage(examples[0]));
+  const initialPrompt = useMemo(getInitialPrompt, []);
+  const initialMode = useMemo(getInitialMode, []);
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [page, setPage] = useState<GeneratedPage>(() => generateControlledPage(initialPrompt));
   const [activeTab, setActiveTab] = useState<StudioTab>(getInitialTab);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>(getStoredHistory);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [generationMode, setGenerationMode] = useState<GenerationMode>("mock");
+  const [generationMode, setGenerationMode] = useState<GenerationMode>(initialMode);
   const [isGenerating, setIsGenerating] = useState(false);
   const [lastGeneration, setLastGeneration] = useState<GenerationResult>({
     page,
-    source: "mock",
+    source: initialMode === "llm" ? "fallback" : "mock",
     rawModelOutput: page
   });
+  const [shareStatus, setShareStatus] = useState("");
+  const [schemaStatus, setSchemaStatus] = useState("");
   const [showRejectedSchema, setShowRejectedSchema] = useState(
     new URLSearchParams(window.location.search).get("rejected") === "1"
   );
@@ -75,8 +120,23 @@ export function App() {
   const schemaForPanel = showRejectedSchema ? unsafeSchema : page;
   const validationForPanel = showRejectedSchema ? rejectedValidation : validation;
 
+  useEffect(() => {
+    window.localStorage.setItem(historyStorageKey, JSON.stringify(history.slice(0, 12)));
+  }, [history]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("prompt") && initialMode === "llm") {
+      void generate();
+    }
+    // Shared LLM links hydrate once so refreshes do not repeatedly call the API.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function generate() {
     setIsGenerating(true);
+    setShareStatus("");
+    setSchemaStatus("");
     const result =
       generationMode === "llm"
         ? await generateWithLlm(prompt)
@@ -91,6 +151,7 @@ export function App() {
     setLastGeneration(result);
     setActiveTab("ui");
     setShowRejectedSchema(false);
+    updateDemoUrl(prompt, generationMode);
     setHistory((items) => [
       {
         id: `${Date.now()}`,
@@ -101,19 +162,51 @@ export function App() {
         source: result.source
       },
       ...items
-    ]);
+    ].slice(0, 12));
     setIsGenerating(false);
   }
 
   function restoreHistory(item: HistoryItem) {
     setPrompt(item.prompt);
     setPage(item.page);
+    const restoredMode = item.source === "llm" ? "llm" : "mock";
+    setGenerationMode(restoredMode);
     setLastGeneration({
       page: item.page,
       source: item.source,
       rawModelOutput: item.page
     });
+    updateDemoUrl(item.prompt, restoredMode);
     setActiveTab("ui");
+  }
+
+  async function copyDemoLink() {
+    try {
+      await copyText(buildDemoUrl(prompt, generationMode));
+      setShareStatus("Demo link copied");
+    } catch {
+      setShareStatus("Unable to copy link");
+    }
+  }
+
+  async function copySchema() {
+    try {
+      await copyText(JSON.stringify(page, null, 2));
+      setSchemaStatus("Schema copied");
+    } catch {
+      setSchemaStatus("Unable to copy schema");
+    }
+  }
+
+  function exportSchema() {
+    const blob = new Blob([JSON.stringify(page, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "controlled-genui-schema.json";
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setSchemaStatus("Schema exported");
   }
 
   return (
@@ -206,6 +299,22 @@ export function App() {
           <TabButton tab="history" activeTab={activeTab} setActiveTab={setActiveTab} icon={<History size={16} />} label="History" />
         </nav>
 
+        <div className="shareBar" aria-label="Demo sharing tools">
+          <button type="button" onClick={copyDemoLink}>
+            <Link2 size={16} />
+            Copy Demo Link
+          </button>
+          <button type="button" onClick={copySchema}>
+            <Copy size={16} />
+            Copy Schema
+          </button>
+          <button type="button" onClick={exportSchema}>
+            <Download size={16} />
+            Export Schema
+          </button>
+          {(shareStatus || schemaStatus) && <span>{shareStatus || schemaStatus}</span>}
+        </div>
+
         {activeTab === "ui" && (
           <section className="workspace">
             <aside className="sidePanel">
@@ -239,6 +348,17 @@ export function App() {
                   Blocked: {validationForPanel.blockedComponents.join(", ")}
                 </div>
               )}
+              <div className="schemaActions">
+                <button type="button" className="secondaryButton" onClick={copySchema}>
+                  <Copy size={16} />
+                  Copy approved JSON
+                </button>
+                <button type="button" className="secondaryButton" onClick={exportSchema}>
+                  <Download size={16} />
+                  Export JSON file
+                </button>
+                {schemaStatus && <p>{schemaStatus}</p>}
+              </div>
             </aside>
             <pre>{JSON.stringify(schemaForPanel, null, 2)}</pre>
           </section>

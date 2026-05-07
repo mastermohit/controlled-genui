@@ -59,6 +59,9 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Local verification command with `npm run verify`
 - GitHub Actions CI for every push and pull request
 - Testing documentation for the Controlled GenUI contract
+- Persistent generated history in `localStorage`
+- Shareable demo links with `prompt` and `mode` query params
+- Copy/export controls for generated schemas
 
 ## Controlled GenUI Principles
 
@@ -96,6 +99,20 @@ Find a laptop for coding under INR 20,000
 the app shows a controlled `no_results` state instead of pretending that one of the existing laptops matches.
 
 This is part of the Controlled GenUI contract: adaptive UI, but grounded in known data.
+
+## Share Demo States
+
+The studio can open directly from a prompt and generation mode:
+
+```txt
+/?prompt=Find+a+laptop+for+coding+under+80000&mode=llm
+```
+
+Use **Copy Demo Link** to copy the current prompt and mode as a shareable URL.
+
+Use **Copy Schema** or **Export Schema** to share the generated JSON contract behind the UI.
+
+Generated history is saved to `localStorage`, so refreshing the demo does not wipe prior runs.
 
 ## Tech Stack
 

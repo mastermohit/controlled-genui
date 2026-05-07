@@ -17,7 +17,7 @@ test("runs the controlled generation demo flow", async ({ page }) => {
   await expect(page.getByText("Controlled detail drawer")).toBeVisible();
   await page.getByRole("button", { name: "Close product details" }).click();
 
-  await page.getByRole("button", { name: "Schema" }).click();
+  await page.getByRole("button", { name: "Schema", exact: true }).click();
   await expect(page.getByText('"pageType": "product_finder"')).toBeVisible();
   await page.getByRole("button", { name: "Simulate rejected schema" }).click();
   await expect(page.getByText("Blocked: raw_html")).toBeVisible();
@@ -29,6 +29,10 @@ test("runs the controlled generation demo flow", async ({ page }) => {
   await page.getByRole("button", { name: "Guardrails" }).click();
   await expect(page.getByText("Raw HTML, script tags, iframe embeds, and remote component URLs have no render path.")).toBeVisible();
 
+  await page.getByRole("button", { name: "History" }).click();
+  await expect(page.getByRole("heading", { name: /Find a laptop for coding and gaming/ })).toBeVisible();
+
+  await page.reload();
   await page.getByRole("button", { name: "History" }).click();
   await expect(page.getByRole("heading", { name: /Find a laptop for coding and gaming/ })).toBeVisible();
 });
@@ -51,9 +55,18 @@ test("keeps the studio usable on a mobile viewport", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Generated UI" })).toBeVisible();
   await expect(page.getByText("Conversational Product Match")).toBeVisible();
 
-  await page.getByRole("button", { name: "Schema" }).click();
+  await page.getByRole("button", { name: "Schema", exact: true }).click();
   await expect(page.getByRole("button", { name: "Simulate rejected schema" })).toBeVisible();
 
   const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(horizontalOverflow).toBeLessThanOrEqual(2);
+});
+
+test("hydrates a shareable prompt URL", async ({ page }) => {
+  await page.goto("/?prompt=Find+a+laptop+for+coding+under+20000&mode=mock&focus=studio");
+
+  await expect(page.getByRole("heading", { name: "Controlled GenUI Studio" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No trusted catalog match" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy Demo Link" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export Schema" })).toBeVisible();
 });

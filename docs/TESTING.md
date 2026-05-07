@@ -9,6 +9,7 @@ The goal is not to test every pixel. The tests protect the safety boundaries tha
 - LLM output is filtered against trusted product data
 - unknown component types such as `raw_html` are rejected before render
 - the main browser demo flow stays usable on desktop and mobile
+- generated history, share links, and schema exports remain part of the demo surface
 
 ## Local Commands
 
@@ -58,3 +59,4 @@ Good next additions:
 - API route tests for rate limiting and prompt length rejection
 - LLM fallback tests for failed API responses
 - visual checks for mobile layout regressions
+- clipboard and download assertions for share/export controls

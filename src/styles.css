@@ -161,6 +161,7 @@ h1 {
 .primaryButton,
 .secondaryButton,
 .iconButton,
+.shareBar button,
 .nextSteps button,
 .examples button,
 .tabs button,
@@ -331,6 +332,40 @@ h1 {
   color: #fff;
   background: #26364a;
   border-color: #26364a;
+}
+
+.shareBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: -10px 0 22px;
+}
+
+.shareBar button {
+  padding: 9px 12px;
+  color: #1d3f3a;
+  background: #fff;
+  border-color: #cddbd7;
+  font-weight: 850;
+}
+
+.shareBar span,
+.schemaActions p {
+  margin: 0;
+  color: #1f6f64;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.schemaActions {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.schemaActions .secondaryButton {
+  margin-top: 0;
 }
 
 .workspace,
@@ -1060,6 +1095,17 @@ th {
     min-width: 0;
     width: 100%;
     white-space: normal;
+  }
+
+  .shareBar {
+    display: grid;
+    width: 100%;
+    max-width: calc(100vw - 28px);
+    margin-inline: auto;
+  }
+
+  .shareBar button {
+    width: 100%;
   }
 
   .recommendationGrid {
