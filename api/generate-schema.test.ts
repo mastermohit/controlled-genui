@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type MockResponse = {
   headers: Record<string, string>;
@@ -62,6 +62,10 @@ describe("/api/generate-schema", () => {
     process.env.RATE_LIMIT_WINDOW_MS = "60000";
     process.env.RATE_LIMIT_MAX_REQUESTS = "5";
     process.env.MAX_PROMPT_LENGTH = "20";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("rejects non-POST requests", async () => {
@@ -131,5 +135,96 @@ describe("/api/generate-schema", () => {
     expect(third.payload).toMatchObject({
       source: "fallback"
     });
+  });
+
+  it("falls back when OpenAI returns an error response", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({
+          error: {
+            message: "Model overloaded"
+          }
+        })
+      })
+    );
+    const handler = await loadHandler();
+    const response = createResponse();
+
+    await handler(createRequest({ body: { prompt: "coding laptop" } }), response);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.payload).toEqual({
+      source: "fallback",
+      error: "Model overloaded",
+      rawModelOutput: {
+        error: {
+          message: "Model overloaded"
+        }
+      }
+    });
+  });
+
+  it("falls back when OpenAI returns no output text", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: "response_without_text"
+        })
+      })
+    );
+    const handler = await loadHandler();
+    const response = createResponse();
+
+    await handler(createRequest({ body: { prompt: "coding laptop" } }), response);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.payload).toEqual({
+      source: "fallback",
+      error: "Model response did not include output_text",
+      rawModelOutput: {
+        id: "response_without_text"
+      }
+    });
+  });
+
+  it("falls back when OpenAI returns an invalid controlled schema", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          output_text: JSON.stringify({
+            pageType: "product_finder",
+            schemaVersion: "1.0",
+            generatedFrom: "unsafe",
+            components: [
+              {
+                type: "raw_html",
+                props: {
+                  html: "<script>alert('blocked')</script>"
+                }
+              }
+            ]
+          })
+        })
+      })
+    );
+    const handler = await loadHandler();
+    const response = createResponse();
+
+    await handler(createRequest({ body: { prompt: "coding laptop" } }), response);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.payload).toMatchObject({
+      source: "fallback"
+    });
+    expect(String((response.payload as { error?: string }).error)).toContain("Invalid discriminator value");
   });
 });

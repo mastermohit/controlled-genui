@@ -59,6 +59,5 @@ The current test files are:
 
 Good next additions:
 
-- LLM fallback tests for failed API responses
 - visual checks for mobile layout regressions
 - clipboard and download assertions for share/export controls
