@@ -49,6 +49,7 @@ This makes the demo safer to change because schema, catalog, and renderer guardr
 
 The current test files are:
 
+- `api/generate-schema.test.ts`
 - `src/generator.test.ts`
 - `src/catalogGuardrails.test.ts`
 - `src/schema.test.ts`
@@ -58,7 +59,6 @@ The current test files are:
 
 Good next additions:
 
-- API route tests for rate limiting and prompt length rejection
 - LLM fallback tests for failed API responses
 - visual checks for mobile layout regressions
 - clipboard and download assertions for share/export controls

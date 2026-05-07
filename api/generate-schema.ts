@@ -73,13 +73,6 @@ export default async function handler(request: any, response: any) {
     });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return response.status(200).json({
-      source: "fallback",
-      error: "OPENAI_API_KEY is not configured"
-    });
-  }
-
   const body = (typeof request.body === "string" ? JSON.parse(request.body) : request.body) as RequestBody;
   const prompt = body.prompt?.trim();
 
@@ -91,6 +84,13 @@ export default async function handler(request: any, response: any) {
     return response.status(400).json({
       source: "fallback",
       error: `Prompt is too long. Maximum length is ${maxPromptLength} characters.`
+    });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return response.status(200).json({
+      source: "fallback",
+      error: "OPENAI_API_KEY is not configured"
     });
   }
 

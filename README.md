@@ -66,6 +66,7 @@ The UI feels generated, but the system remains predictable, testable, and safe.
 - Schema Inspector for component-level registry and prop checks
 - Schema comparison notes in Model Output
 - Multiple rejected-schema examples
+- API route tests for prompt validation, fallback, and rate limiting
 
 ## Controlled GenUI Principles
 
@@ -231,6 +232,8 @@ Retry-After
 ```
 
 This implementation uses an in-memory store, which is enough for a portfolio/demo app. For production-grade abuse protection across multiple serverless regions, use a shared store such as Upstash Redis, Vercel KV, or another managed rate-limit service.
+
+The API route is covered by tests for method rejection, missing prompts, overlong prompts, missing-key fallback, and repeated-request rate limiting.
 
 To confirm which path ran, open the **Model Output** tab:
 
